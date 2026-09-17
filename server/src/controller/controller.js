@@ -1,6 +1,7 @@
-const { registerAdmin, login } = require("./auth/authController");
+const { registerUser, login, createAdmin } = require("./auth/authController");
 
 module.exports = {
-    registerAdmin,
+    createAdmin,
+    registerUser,
     login
 };
