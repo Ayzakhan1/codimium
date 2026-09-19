@@ -1,9 +1,14 @@
 import { useState } from "react";
 import axios from "axios";
 import crmImage from "../assets/img.jpeg";
+import { useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+const API_URL = import.meta.env.VITE_API_URL;
 
 const Login = () => {
   const [isRegister, setIsRegister] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [formData, setFormData] = useState({
     name: "",
@@ -12,73 +17,208 @@ const Login = () => {
     confirmPassword: "",
   });
 
+  const nav = useNavigate();
+
+  //================= CHECK TOKEN =================
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+
+    if (token) {
+      nav("/dashboard");
+    }
+  }, [nav]);
+  
+  // ================= HANDLE CHANGE =================
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
+    });
+
+    // Remove error while typing
+    setErrors({
+      ...errors,
+      [name]: "",
+      general: "",
     });
   };
 
-  const handleSubmit = (e) => {
+  // ================= VALIDATION =================
+  const validateForm = () => {
+    const newErrors = {};
+
+    // Name validation - Register only
+    if (isRegister) {
+      const name = formData.name.trim();
+
+      if (!name) {
+        newErrors.name = "Full name is required";
+      } else if (name.length < 3) {
+        newErrors.name = "Name must be at least 3 characters";
+      }
+    }
+
+    // Email validation
+    const email = formData.email.trim();
+
+    if (!email) {
+      newErrors.email = "Email is required";
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      newErrors.email = "Please enter a valid email address";
+    }
+
+    // Password validation
+    const password = formData.password;
+
+    if (!password) {
+      newErrors.password = "Password is required";
+    } else if (password.length < 8) {
+      newErrors.password = "Password must be at least 8 characters";
+    } else if (!/[A-Z]/.test(password)) {
+      newErrors.password =
+        "Password must contain at least one uppercase letter";
+    } else if (!/[a-z]/.test(password)) {
+      newErrors.password =
+        "Password must contain at least one lowercase letter";
+    } else if (!/[0-9]/.test(password)) {
+      newErrors.password = "Password must contain at least one number";
+    }
+
+    // Confirm password - Register only
+    if (isRegister) {
+      if (!formData.confirmPassword) {
+        newErrors.confirmPassword = "Please confirm your password";
+      } else if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+      }
+    }
+
+    setErrors(newErrors);
+
+    return Object.keys(newErrors).length === 0;
+  };
+
+  // ================= SUBMIT =================
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
-     if (isRegister) {
-    register();
-  } else {
-    login();
-  }
-}
-   
+    // Frontend validation
+    const isValid = validateForm();
+
+    if (!isValid) {
+      return;
+    }
+
+    if (isRegister) {
+      await register();
+    } else {
+      await login();
+    }
   };
+
+  // ================= REGISTER =================
   const register = async () => {
     try {
-      if (formData.password !== formData.confirmPassword) {
-        alert("Passwords do not match");
-        return;
-      }
+      setLoading(true);
 
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/register",
-        {
-          name: formData.name,
-          email: formData.email,
-          password: formData.password,
-        },
-      );
+      const response = await axios.post(`${API_URL}/api/auth/register`, {
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        password: formData.password,
+      });
 
       console.log("Register Response:", response.data);
 
       alert("Registration successful!");
+
+      // Switch to login
+      setIsRegister(false);
+
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+
+      setErrors({});
     } catch (error) {
       console.log("Register Error:", error);
 
-      alert(error.response?.data?.message || "Registration failed");
+      setErrors({
+        general:
+          error.response?.data?.message ||
+          "Registration failed. Please try again.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
 
+  // ================= LOGIN =================
   const login = async () => {
     try {
-      const response = await axios.post(
-        "http://localhost:5000/api/auth/login",
-        {
-          email: formData.email,
-          password: formData.password,
-        },
-      );
+      setLoading(true);
+
+      const response = await axios.post(`${API_URL}/api/auth/login`, {
+        email: formData.email.trim(),
+        password: formData.password,
+      });
 
       console.log("Login Response:", response.data);
 
+      // Save token
       localStorage.setItem("token", response.data.auth);
 
+      // Save user
       localStorage.setItem("user", JSON.stringify(response.data.data));
 
       alert("Login successful!");
+
+      setFormData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+      });
+
+      setErrors({});
     } catch (error) {
       console.log("Login Error:", error);
 
-      alert(error.response?.data?.message || "Login failed");
+      setErrors({
+        general:
+          error.response?.data?.message ||
+          "Login failed. Please check your credentials.",
+      });
+    } finally {
+      setLoading(false);
     }
   };
+
+  // ================= SWITCH LOGIN / REGISTER =================
+  const switchMode = () => {
+    setIsRegister(!isRegister);
+
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
+
+    setErrors({});
+  };
+
+  //   const logout = () => {
+  //   localStorage.removeItem("token");
+  //   localStorage.removeItem("user");
+
+  //   window.location.href = "/login";
+  // };
 
   return (
     <div className="min-h-screen flex bg-slate-100">
@@ -108,7 +248,7 @@ const Login = () => {
       {/* ================= RIGHT SIDE ================= */}
       <div className="w-full lg:w-[40%] flex items-center justify-center px-6 py-10 bg-white">
         <div className="w-full max-w-md">
-          {/* Logo / Heading */}
+          {/* ================= LOGO / HEADING ================= */}
           <div className="text-center mb-8">
             <div className="inline-flex items-center justify-center w-14 h-14 rounded-2xl bg-indigo-600 text-white text-2xl font-bold mb-5 shadow-lg shadow-indigo-200">
               C
@@ -125,12 +265,16 @@ const Login = () => {
             </p>
           </div>
 
+          {/* ================= GENERAL ERROR ================= */}
+          {errors.general && (
+            <div className="mb-5 rounded-xl bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-600">
+              {errors.general}
+            </div>
+          )}
+
           {/* ================= FORM ================= */}
-          <form
-            onSubmit={handleSubmit}
-            className="space-y-5"
-          >
-            {/* Name - Register Only */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+            {/* ================= NAME ================= */}
             {isRegister && (
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -143,24 +287,20 @@ const Login = () => {
                   value={formData.name}
                   onChange={handleChange}
                   placeholder="Enter your full name"
-                  required
-                  className="
-                    w-full px-4 py-3.5
-                    border border-slate-300
-                    rounded-xl
-                    outline-none
-                    text-slate-800
-                    placeholder:text-slate-400
-                    transition-all duration-200
-                    hover:border-indigo-400
-                    focus:border-indigo-600
-                    focus:ring-4 focus:ring-indigo-100
-                  "
+                  className={`w-full px-4 py-3.5 border rounded-xl outline-none text-slate-800 placeholder:text-slate-400 transition-all duration-200 ${
+                    errors.name
+                      ? "border-red-500 focus:ring-4 focus:ring-red-100"
+                      : "border-slate-300 hover:border-indigo-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100"
+                  }`}
                 />
+
+                {errors.name && (
+                  <p className="mt-1 text-sm text-red-500">{errors.name}</p>
+                )}
               </div>
             )}
 
-            {/* Email */}
+            {/* ================= EMAIL ================= */}
             <div>
               <label className="block text-sm font-semibold text-slate-700 mb-2">
                 Email Address
@@ -172,23 +312,19 @@ const Login = () => {
                 value={formData.email}
                 onChange={handleChange}
                 placeholder="Enter your email"
-                required
-                className="
-                  w-full px-4 py-3.5
-                  border border-slate-300
-                  rounded-xl
-                  outline-none
-                  text-slate-800
-                  placeholder:text-slate-400
-                  transition-all duration-200
-                  hover:border-indigo-400
-                  focus:border-indigo-600
-                  focus:ring-4 focus:ring-indigo-100
-                "
+                className={`w-full px-4 py-3.5 border rounded-xl outline-none text-slate-800 placeholder:text-slate-400 transition-all duration-200 ${
+                  errors.email
+                    ? "border-red-500 focus:ring-4 focus:ring-red-100"
+                    : "border-slate-300 hover:border-indigo-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100"
+                }`}
               />
+
+              {errors.email && (
+                <p className="mt-1 text-sm text-red-500">{errors.email}</p>
+              )}
             </div>
 
-            {/* Password */}
+            {/* ================= PASSWORD ================= */}
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-sm font-semibold text-slate-700">
@@ -211,23 +347,19 @@ const Login = () => {
                 value={formData.password}
                 onChange={handleChange}
                 placeholder="Enter your password"
-                required
-                className="
-                  w-full px-4 py-3.5
-                  border border-slate-300
-                  rounded-xl
-                  outline-none
-                  text-slate-800
-                  placeholder:text-slate-400
-                  transition-all duration-200
-                  hover:border-indigo-400
-                  focus:border-indigo-600
-                  focus:ring-4 focus:ring-indigo-100
-                "
+                className={`w-full px-4 py-3.5 border rounded-xl outline-none text-slate-800 placeholder:text-slate-400 transition-all duration-200 ${
+                  errors.password
+                    ? "border-red-500 focus:ring-4 focus:ring-red-100"
+                    : "border-slate-300 hover:border-indigo-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100"
+                }`}
               />
+
+              {errors.password && (
+                <p className="mt-1 text-sm text-red-500">{errors.password}</p>
+              )}
             </div>
 
-            {/* Confirm Password */}
+            {/* ================= CONFIRM PASSWORD ================= */}
             {isRegister && (
               <div>
                 <label className="block text-sm font-semibold text-slate-700 mb-2">
@@ -240,34 +372,28 @@ const Login = () => {
                   value={formData.confirmPassword}
                   onChange={handleChange}
                   placeholder="Confirm your password"
-                  required
-                  className="
-                    w-full px-4 py-3.5
-                    border border-slate-300
-                    rounded-xl
-                    outline-none
-                    text-slate-800
-                    placeholder:text-slate-400
-                    transition-all duration-200
-                    hover:border-indigo-400
-                    focus:border-indigo-600
-                    focus:ring-4 focus:ring-indigo-100
-                  "
+                  className={`w-full px-4 py-3.5 border rounded-xl outline-none text-slate-800 placeholder:text-slate-400 transition-all duration-200 ${
+                    errors.confirmPassword
+                      ? "border-red-500 focus:ring-4 focus:ring-red-100"
+                      : "border-slate-300 hover:border-indigo-400 focus:border-indigo-600 focus:ring-4 focus:ring-indigo-100"
+                  }`}
                 />
+
+                {errors.confirmPassword && (
+                  <p className="mt-1 text-sm text-red-500">
+                    {errors.confirmPassword}
+                  </p>
+                )}
               </div>
             )}
 
-            {/* Remember Me */}
+            {/* ================= REMEMBER ME ================= */}
             {!isRegister && (
               <div className="flex items-center gap-2">
                 <input
                   type="checkbox"
                   id="remember"
-                  className="
-                    w-4 h-4
-                    accent-indigo-600
-                    cursor-pointer
-                  "
+                  className="w-4 h-4 accent-indigo-600 cursor-pointer"
                 />
 
                 <label
@@ -279,32 +405,17 @@ const Login = () => {
               </div>
             )}
 
-            {/* Submit Button */}
+            {/* ================= SUBMIT BUTTON ================= */}
             <button
               type="submit"
-              className="
-                w-full
-                py-3.5
-                px-4
-                rounded-xl
-                bg-indigo-600
-                hover:bg-indigo-700
-                active:bg-indigo-800
-                text-white
-                font-semibold
-                text-base
-                shadow-lg
-                shadow-indigo-200
-                hover:shadow-xl
-                hover:shadow-indigo-300
-                hover:-translate-y-0.5
-                active:translate-y-0
-                transition-all
-                duration-200
-                cursor-pointer
-              "
+              disabled={loading}
+              className="w-full py-3.5 px-4 rounded-xl bg-indigo-600 hover:bg-indigo-700 active:bg-indigo-800 disabled:bg-indigo-400 disabled:cursor-not-allowed text-white font-semibold text-base shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 hover:-translate-y-0.5 active:translate-y-0 transition-all duration-200 cursor-pointer"
             >
-              {isRegister ? "Create Account" : "Login"}
+              {loading
+                ? "Please wait..."
+                : isRegister
+                  ? "Create Account"
+                  : "Login"}
             </button>
           </form>
 
@@ -322,25 +433,8 @@ const Login = () => {
 
             <button
               type="button"
-              onClick={() => {
-                setIsRegister(!isRegister);
-
-                setFormData({
-                  name: "",
-                  email: "",
-                  password: "",
-                  confirmPassword: "",
-                });
-              }}
-              className="
-                ml-2
-                font-semibold
-                text-indigo-600
-                hover:text-indigo-800
-                hover:underline
-                transition
-                cursor-pointer
-              "
+              onClick={switchMode}
+              className="ml-2 font-semibold text-indigo-600 hover:text-indigo-800 hover:underline transition cursor-pointer"
             >
               {isRegister ? "Login" : "Register"}
             </button>
