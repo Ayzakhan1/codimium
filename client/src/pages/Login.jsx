@@ -21,13 +21,19 @@ const Login = () => {
 
   //================= CHECK TOKEN =================
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
+ useEffect(() => {
+  const token = localStorage.getItem("token");
+ const storedUser = localStorage.getItem("user");
+const user = storedUser ? JSON.parse(storedUser) : null;
 
-    if (token) {
-      nav("/dashboard");
+  if (token && user) {
+    if (user.role === "admin") {
+      nav("/admin/dashboard");
+    } else if (user.role === "team_member") {
+      nav("/user/dashboard");
     }
-  }, [nav]);
+  }
+}, [nav]);
   
   // ================= HANDLE CHANGE =================
   const handleChange = (e) => {
@@ -159,45 +165,48 @@ const Login = () => {
   };
 
   // ================= LOGIN =================
-  const login = async () => {
-    try {
-      setLoading(true);
+const login = async () => {
+  try {
+    setLoading(true);
 
-      const response = await axios.post(`${API_URL}/api/auth/login`, {
-        email: formData.email.trim(),
-        password: formData.password,
-      });
+    const response = await axios.post(`${API_URL}/api/auth/login`, {
+      email: formData.email.trim(),
+      password: formData.password,
+    });
 
-      console.log("Login Response:", response.data);
+    console.log("Login Response:", response.data);
 
-      // Save token
-      localStorage.setItem("token", response.data.auth);
+    // Save token
+    localStorage.setItem("token", response.data.auth);
 
-      // Save user
-      localStorage.setItem("user", JSON.stringify(response.data.data));
+    // Save user
+    localStorage.setItem(
+      "user",
+      JSON.stringify(response.data.user)
+    );
 
-      alert("Login successful!");
+    alert("Login successful!");
 
-      setFormData({
-        name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-      });
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    });
 
-      setErrors({});
-    } catch (error) {
-      console.log("Login Error:", error);
+    setErrors({});
+  } catch (error) {
+    console.log("Login Error:", error);
 
-      setErrors({
-        general:
-          error.response?.data?.message ||
-          "Login failed. Please check your credentials.",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+    setErrors({
+      general:
+        error.response?.data?.message ||
+        "Login failed. Please check your credentials.",
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   // ================= SWITCH LOGIN / REGISTER =================
   const switchMode = () => {
