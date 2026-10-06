@@ -1,3 +1,4 @@
+
 import { Outlet } from "react-router-dom";
 import Header from "../components/Header";
 import Sidebar from "../components/Sidebar";
@@ -5,7 +6,7 @@ import Footer from "../components/Footer";
 
 const Layout = () => {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-100">
+    <div className="min-h-screen flex flex-col bg-background">
 
       {/* Header */}
       <Header />
@@ -31,4 +32,3 @@ const Layout = () => {
 };
 
 export default Layout;
-

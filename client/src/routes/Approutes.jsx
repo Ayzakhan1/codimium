@@ -8,6 +8,7 @@ import Login from "../pages/Login";
 import Layout from "../layouts/Layout";
 import AdminDashboard from "../pages/Admin/Dashboard";
 import UserDashboard from "../pages/User/Dashboard";
+import Leads from "../pages/Admin/Leads";
 
 const router = createBrowserRouter(
   createRoutesFromElements(
@@ -18,6 +19,7 @@ const router = createBrowserRouter(
       {/* Admin */}
       <Route path="/admin" element={<Layout />}>
         <Route path="dashboard" element={<AdminDashboard />} />
+        <Route path="leads" element={<Leads/>} />
       </Route>
 
       {/* User */}

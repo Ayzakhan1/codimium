@@ -48,9 +48,9 @@ const Sidebar = () => {
       className="
         w-64
         min-h-screen
-        bg-white
-        border-r border-slate-200
-        text-slate-700
+        bg-surface
+        border-r border-border
+        text-ink-secondary
         p-5
         flex
         flex-col
@@ -104,8 +104,8 @@ const Sidebar = () => {
 
                 ${
                   isActive
-                    ? "bg-[#075985] text-white"
-                    : "text-slate-700 hover:bg-[#F0FAFF] hover:text-[#075985]"
+                    ? "bg-primary text-white"
+                    : "text-ink-secondary hover:bg-background hover:text-primary"
                 }
 
                 max-md:flex-1
@@ -147,9 +147,9 @@ const Sidebar = () => {
           px-4
           py-3
           font-medium
-          bg-[#075985]
+          bg-primary
           text-white
-          hover:bg-[#064e73]
+          hover:bg-primary-hover
           transition-all
           duration-200
 
@@ -163,9 +163,9 @@ const Sidebar = () => {
           max-md:rounded-md
           max-md:mt-0
           max-md:bg-transparent
-          max-md:text-slate-700
-          max-md:hover:bg-[#F0FAFF]
-          max-md:hover:text-[#075985]
+          max-md:text-ink-secondary
+          max-md:hover:bg-background
+          max-md:hover:text-primary
         "
       >
         <LogOut

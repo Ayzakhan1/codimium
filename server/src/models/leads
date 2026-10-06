@@ -1,0 +1,97 @@
+const mongoose = require("mongoose");
+
+const leadSchema = new mongoose.Schema(
+  {
+    businessName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+
+    contactPerson: {
+      type: String,
+      trim: true,
+    },
+
+    phone: {
+      type: String,
+      trim: true,
+    },
+
+    email: {
+      type: String,
+      trim: true,
+    },
+
+    city: {
+      type: String,
+      trim: true,
+    },
+
+    category: {
+      type: String,
+      trim: true,
+    },
+
+    websiteUrl: {
+      type: String,
+      trim: true,
+    },
+
+    socialMediaUrl: {
+      type: String,
+      trim: true,
+    },
+
+    potentialService: {
+      type: String,
+      enum: [
+        "Website",
+        "Shopify",
+        "SEO",
+        "Automation",
+        "Web Application",
+        "E-commerce",
+        "Digital Marketing",
+        "Other",
+      ],
+    },
+
+    status: {
+      type: String,
+      enum: [
+        "New",
+        "Contacted",
+        "Interested",
+        "Meeting",
+        "Proposal Sent",
+        "Won",
+        "Lost",
+      ],
+      default: "New",
+    },
+
+    notes: {
+      type: String,
+      trim: true,
+    },
+
+    assignedTo: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      default: null,
+    },
+
+    followUpDate: {
+      type: Date,
+      default: null,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+const Leads = mongoose.model("Leads", leadSchema);
+
+module.exports = Leads;
