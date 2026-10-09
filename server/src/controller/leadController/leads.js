@@ -61,8 +61,45 @@ const deleteLead =  async (req, res)=>{
     }
 };
 
+const updateLead = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const response = await Leads.findByIdAndUpdate(
+      id,
+       {
+                $set: req.body
+
+       },
+      {
+        new: true,
+        runValidators: true
+      }
+    );
+
+    if (!response) {
+      return res.status(404).json({
+        message: "User not found"
+      });
+    }
+
+    res.status(200).json({
+      message: "User updated successfully",
+      data: response
+    });
+
+  } catch (error) {
+    console.log("UPDATE ERROR:", error);
+    res.status(500).json({
+      message: "Error updating user",
+      error: error.message
+    });
+  }
+};
+
 module.exports ={
     addLeads,
     getLeads,
-    deleteLead
+    deleteLead,
+    updateLead
 };

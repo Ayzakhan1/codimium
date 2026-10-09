@@ -87,9 +87,6 @@ export default function Leads() {
   const [category, setCategory] = useState("All");
   const [service, setService] = useState("All");
 
- 
- 
-
   // -----------------------------
   // FORM CHANGE
   // -----------------------------
@@ -113,26 +110,49 @@ export default function Leads() {
     setShowForm(true);
   };
 
-  // -----------------------------
-  // ADD LEAD API
-  // -----------------------------
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     console.log("FORM DATA:", form);
 
-    try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/leads/add-leads`,
-        form
-      );
+    if (selectedLead) {
+      // -----------------------------
+      // UPDATE LEAD API
+      // -----------------------------
+      try {
+        const response = await axios.put(
+          `${import.meta.env.VITE_API_URL}/api/leads/update-lead/${selectedLead._id}`,
+          form,
+        );
+        console.log("Lead updated:", response.data);
 
-      console.log("Lead added:", response.data);
+        setLeads((prevLeads) =>
+          prevLeads.map((lead) =>
+            lead._id === selectedLead._id ? response.data.data : lead,
+          ),
+        );
+        setShowForm(false);
+      } catch (error) {
+        console.log("Error updating lead:", error);
+      }
+    } else {
+      // -----------------------------
+      // ADD LEAD API
+      // -----------------------------
 
-      setForm(emptyForm);
-      setShowForm(false);
-    } catch (error) {
-      console.error("Error adding lead:", error);
+      try {
+        const response = await axios.post(
+          `${import.meta.env.VITE_API_URL}/api/leads/add-leads`,
+          form,
+        );
+
+        console.log("Lead added:", response.data);
+        setLeads((prevLeads) => [...prevLeads, response.data.data]);
+
+        setForm(emptyForm);
+        setShowForm(false);
+      } catch (error) {
+        console.error("Error adding lead:", error);
+      }
     }
   };
 
@@ -140,58 +160,73 @@ export default function Leads() {
   // GET LEAD API
   // -----------------------------
 
-  useEffect(()=>{
-    const getLeads = async () =>{
-         try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/leads/get-leads`
-      );
+  useEffect(() => {
+    const getLeads = async () => {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/leads/get-leads`,
+        );
 
-      console.log("get lEADs:", response.data);
+        console.log("get lEADs:", response.data);
 
-      setLeads(response.data.data);
+        setLeads(response.data.data);
+      } catch (error) {
+        console.error("Error getting lead:", error);
+      }
+    };
+    getLeads();
+  }, []);
 
-     
-    } catch (error) {
-      console.error("Error getting lead:", error);
-    }
-    }
-     getLeads();
-  },[])
-
-   // -----------------------------
+  // -----------------------------
   // DELETE LEAD API
   // -----------------------------
 
- const handleDelete = async () => {
-  if (!deleteLead?._id) return;
+  const handleDelete = async () => {
+    if (!deleteLead?._id) return;
 
-  try {
-    const response = await axios.delete(
-      `${import.meta.env.VITE_API_URL}/api/leads/delete-lead/${deleteLead._id}`
-    );
+    try {
+      const response = await axios.delete(
+        `${import.meta.env.VITE_API_URL}/api/leads/delete-lead/${deleteLead._id}`,
+      );
 
-    console.log("Lead deleted:", response.data);
+      console.log("Lead deleted:", response.data);
 
-    
-    setLeads((prevLeads) =>
-      prevLeads.filter((lead) => lead._id !== deleteLead._id)
-    );
+      setLeads((prevLeads) =>
+        prevLeads.filter((lead) => lead._id !== deleteLead._id),
+      );
 
-    // Modal close
-    setShowDelete(false);
-    setDeleteLead(null);
+      // Modal close
+      setShowDelete(false);
+      setDeleteLead(null);
+    } catch (error) {
+      console.error("Error deleting lead:", error);
+    }
+  };
 
-  } catch (error) {
-    console.error("Error deleting lead:", error);
-  }
-};
+
   // -----------------------------
   // EDIT UI ONLY
   // -----------------------------
 
   const openEditForm = (lead) => {
     setSelectedLead(lead);
+
+    setForm({
+      businessName: lead.businessName || "",
+      contactPerson: lead.contactPerson || "",
+      phone: lead.phone || "",
+      email: lead.email || "",
+      city: lead.city || "",
+      category: lead.category || "",
+      websiteUrl: lead.websiteUrl || "",
+      socialMediaUrl: lead.socialMediaUrl || "",
+      potentialService: lead.potentialService || "",
+      status: lead.status || "New",
+      notes: lead.notes || "",
+      assignedTo: lead.assignedTo || "",
+      followUpDate: lead.followUpDate ? lead.followUpDate.slice(0, 10) : "",
+    });
+
     setShowForm(true);
   };
 
@@ -240,9 +275,7 @@ export default function Leads() {
   const getUserName = (lead) => {
     if (!lead?.assignedTo) return "Unassigned";
 
-    const user = users.find(
-      (item) => item.id === lead.assignedTo
-    );
+    const user = users.find((item) => item.id === lead.assignedTo);
 
     return user ? user.name : "Assigned";
   };
@@ -252,15 +285,11 @@ export default function Leads() {
   // -----------------------------
 
   const filteredLeads = leads.filter((lead) => {
-    const statusMatch =
-      status === "All" || lead.status === status;
+    const statusMatch = status === "All" || lead.status === status;
 
-    const categoryMatch =
-      category === "All" || lead.category === category;
+    const categoryMatch = category === "All" || lead.category === category;
 
-    const serviceMatch =
-      service === "All" ||
-      lead.potentialService === service;
+    const serviceMatch = service === "All" || lead.potentialService === service;
 
     return statusMatch && categoryMatch && serviceMatch;
   });
@@ -271,32 +300,21 @@ export default function Leads() {
 
   const totalLeads = leads.length;
 
-  const newLeads = leads.filter(
-    (lead) => lead.status === "New"
-  ).length;
+  const newLeads = leads.filter((lead) => lead.status === "New").length;
 
-  const wonLeads = leads.filter(
-    (lead) => lead.status === "Won"
-  ).length;
+  const wonLeads = leads.filter((lead) => lead.status === "Won").length;
 
-  const followUpLeads = leads.filter(
-    (lead) => lead.followUpDate
-  ).length;
+  const followUpLeads = leads.filter((lead) => lead.followUpDate).length;
 
   return (
     <div className="space-y-6 bg-background">
-
       {/* ================= HEADER ================= */}
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">
-            CRM Management
-          </h1>
+          <h1 className="text-2xl font-bold text-ink">CRM Management</h1>
 
-          <p className="text-ink-secondary">
-            Manage your leads and customers
-          </p>
+          <p className="text-ink-secondary">Manage your leads and customers</p>
         </div>
 
         <button
@@ -311,91 +329,61 @@ export default function Leads() {
       {/* ================= SUMMARY ================= */}
 
       <div className="grid grid-cols-1 gap-4 md:grid-cols-4">
-
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-ink-muted">
-                Total Leads
-              </p>
+              <p className="text-sm text-ink-muted">Total Leads</p>
 
-              <h2 className="mt-1 text-2xl font-bold text-ink">
-                {totalLeads}
-              </h2>
+              <h2 className="mt-1 text-2xl font-bold text-ink">{totalLeads}</h2>
             </div>
 
-            <Users
-              size={24}
-              className="text-primary"
-            />
+            <Users size={24} className="text-primary" />
           </div>
         </div>
 
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-ink-muted">
-                New Leads
-              </p>
+              <p className="text-sm text-ink-muted">New Leads</p>
 
-              <h2 className="mt-1 text-2xl font-bold text-ink">
-                {newLeads}
-              </h2>
+              <h2 className="mt-1 text-2xl font-bold text-ink">{newLeads}</h2>
             </div>
 
-            <User
-              size={24}
-              className="text-primary"
-            />
+            <User size={24} className="text-primary" />
           </div>
         </div>
 
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-ink-muted">
-                Won Leads
-              </p>
+              <p className="text-sm text-ink-muted">Won Leads</p>
 
-              <h2 className="mt-1 text-2xl font-bold text-ink">
-                {wonLeads}
-              </h2>
+              <h2 className="mt-1 text-2xl font-bold text-ink">{wonLeads}</h2>
             </div>
 
-            <CheckCircle2
-              size={24}
-              className="text-success"
-            />
+            <CheckCircle2 size={24} className="text-success" />
           </div>
         </div>
 
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-ink-muted">
-                Follow-ups
-              </p>
+              <p className="text-sm text-ink-muted">Follow-ups</p>
 
               <h2 className="mt-1 text-2xl font-bold text-ink">
                 {followUpLeads}
               </h2>
             </div>
 
-            <CalendarClock
-              size={24}
-              className="text-primary"
-            />
+            <CalendarClock size={24} className="text-primary" />
           </div>
         </div>
-
       </div>
 
       {/* ================= FILTERS ================= */}
 
       <div className="rounded-xl border border-border bg-surface p-4">
-
         <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-
           {/* STATUS */}
 
           <div>
@@ -408,9 +396,7 @@ export default function Leads() {
               onChange={(e) => setStatus(e.target.value)}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
             >
-              <option value="All">
-                All Statuses
-              </option>
+              <option value="All">All Statuses</option>
 
               {statuses.map((item) => (
                 <option key={item} value={item}>
@@ -432,9 +418,7 @@ export default function Leads() {
               onChange={(e) => setCategory(e.target.value)}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
             >
-              <option value="All">
-                All Categories
-              </option>
+              <option value="All">All Categories</option>
 
               {categories.map((item) => (
                 <option key={item} value={item}>
@@ -456,9 +440,7 @@ export default function Leads() {
               onChange={(e) => setService(e.target.value)}
               className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
             >
-              <option value="All">
-                All Services
-              </option>
+              <option value="All">All Services</option>
 
               {services.map((item) => (
                 <option key={item} value={item}>
@@ -467,13 +449,11 @@ export default function Leads() {
               ))}
             </select>
           </div>
-
         </div>
 
         {/* FILTER COUNT */}
 
         <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
-
           <p className="text-sm text-ink-muted">
             Showing{" "}
             <span className="font-semibold text-ink">
@@ -492,157 +472,130 @@ export default function Leads() {
           >
             Clear Filters
           </button>
-
         </div>
-
       </div>
 
       {/* ================= TABLE ================= */}
 
-     <div className="overflow-hidden rounded-xl border border-border bg-surface">
-  {filteredLeads.length === 0 ? (
-    <div className="py-16 text-center">
-      <Users
-        size={40}
-        className="mx-auto mb-3 text-ink-muted"
-      />
+      <div className="overflow-hidden rounded-xl border border-border bg-surface">
+        {filteredLeads.length === 0 ? (
+          <div className="py-16 text-center">
+            <Users size={40} className="mx-auto mb-3 text-ink-muted" />
 
-      <h3 className="font-semibold text-ink">
-        No leads found
-      </h3>
+            <h3 className="font-semibold text-ink">No leads found</h3>
 
-      <p className="mt-1 text-sm text-ink-muted">
-        Add a new lead to get started.
-      </p>
-    </div>
-  ) : (
-    <div className="overflow-x-auto">
-      <table className="w-full text-left">
-        <thead className="border-b border-border bg-background">
-          <tr>
-            <th className="px-5 py-3 text-sm text-ink">
-              Business
-            </th>
+            <p className="mt-1 text-sm text-ink-muted">
+              Add a new lead to get started.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-x-auto">
+            <table className="w-full text-left">
+              <thead className="border-b border-border bg-background">
+                <tr>
+                  <th className="px-5 py-3 text-sm text-ink">Business</th>
 
-            <th className="px-5 py-3 text-sm text-ink">
-              Contact
-            </th>
+                  <th className="px-5 py-3 text-sm text-ink">Contact</th>
 
-            <th className="px-5 py-3 text-sm text-ink">
-              Location
-            </th>
+                  <th className="px-5 py-3 text-sm text-ink">Location</th>
 
-            <th className="px-5 py-3 text-sm text-ink">
-              Service
-            </th>
+                  <th className="px-5 py-3 text-sm text-ink">Service</th>
 
-            <th className="px-5 py-3 text-sm text-ink">
-              Status
-            </th>
+                  <th className="px-5 py-3 text-sm text-ink">Status</th>
 
-            <th className="px-5 py-3 text-sm text-ink">
-              Actions
-            </th>
-          </tr>
-        </thead>
+                  <th className="px-5 py-3 text-sm text-ink">Actions</th>
+                </tr>
+              </thead>
 
-        <tbody>
-          {filteredLeads.map((lead) => (
-            <tr
-              key={lead.id}
-              className="border-b border-border last:border-0"
-            >
-              {/* Business */}
-              <td className="px-5 py-4">
-                <p className="font-medium text-ink">
-                  {lead.businessName}
-                </p>
-
-                <p className="text-sm text-ink-muted">
-                  {lead.category}
-                </p>
-              </td>
-
-              {/* Contact */}
-              <td className="px-5 py-4">
-                <p className="font-medium text-ink">
-                  {lead.contactPerson}
-                </p>
-
-                <p className="flex items-center gap-1 text-sm text-ink-muted">
-                  <Phone size={13} />
-                  {lead.phone}
-                </p>
-              </td>
-
-              {/* Location */}
-              <td className="px-5 py-4">
-                <p className="flex items-center gap-1 text-ink">
-                  <MapPin size={14} />
-                  {lead.city}
-                </p>
-              </td>
-
-              {/* Service */}
-              <td className="px-5 py-4 text-ink">
-                {lead.potentialService}
-              </td>
-
-              {/* Status */}
-              <td className="px-5 py-4 text-ink">
-                {lead.status || "New"}
-              </td>
-
-              {/* Actions */}
-              <td className="px-5 py-4">
-                <div className="flex items-center gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedLead(lead);
-                      setShowDetails(true);
-                    }}
-                    className="rounded-lg p-2 text-ink-secondary hover:bg-background hover:text-primary"
+              <tbody>
+                {filteredLeads.map((lead) => (
+                  <tr
+                    key={lead.id}
+                    className="border-b border-border last:border-0"
                   >
-                    <Eye size={17} />
-                  </button>
+                    {/* Business */}
+                    <td className="px-5 py-4">
+                      <p className="font-medium text-ink">
+                        {lead.businessName}
+                      </p>
 
-                  <button
-                    onClick={() => openEditForm(lead)}
-                    className="rounded-lg p-2 text-ink-secondary hover:bg-background hover:text-primary"
-                  >
-                    <Edit3 size={17} />
-                  </button>
+                      <p className="text-sm text-ink-muted">{lead.category}</p>
+                    </td>
 
-                  <button
-                    onClick={() => openDeleteModal(lead)}
-                    className="rounded-lg p-2 text-error hover:bg-red-50"
-                  >
-                    <Trash2 size={17} />
-                  </button>
-                </div>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  )}
-</div>
+                    {/* Contact */}
+                    <td className="px-5 py-4">
+                      <p className="font-medium text-ink">
+                        {lead.contactPerson}
+                      </p>
+
+                      <p className="flex items-center gap-1 text-sm text-ink-muted">
+                        <Phone size={13} />
+                        {lead.phone}
+                      </p>
+                    </td>
+
+                    {/* Location */}
+                    <td className="px-5 py-4">
+                      <p className="flex items-center gap-1 text-ink">
+                        <MapPin size={14} />
+                        {lead.city}
+                      </p>
+                    </td>
+
+                    {/* Service */}
+                    <td className="px-5 py-4 text-ink">
+                      {lead.potentialService}
+                    </td>
+
+                    {/* Status */}
+                    <td className="px-5 py-4 text-ink">
+                      {lead.status || "New"}
+                    </td>
+
+                    {/* Actions */}
+                    <td className="px-5 py-4">
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setSelectedLead(lead);
+                            setShowDetails(true);
+                          }}
+                          className="rounded-lg p-2 text-ink-secondary hover:bg-background hover:text-primary"
+                        >
+                          <Eye size={17} />
+                        </button>
+
+                        <button
+                          onClick={() => openEditForm(lead)}
+                          className="rounded-lg p-2 text-ink-secondary hover:bg-background hover:text-primary"
+                        >
+                          <Edit3 size={17} />
+                        </button>
+
+                        <button
+                          onClick={() => openDeleteModal(lead)}
+                          className="rounded-lg p-2 text-error hover:bg-red-50"
+                        >
+                          <Trash2 size={17} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* ================= DETAILS MODAL ================= */}
 
       {showDetails && selectedLead && (
-
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface">
-
             <div className="flex items-center justify-between border-b border-border p-5">
-
               <div>
-                <h2 className="text-xl font-bold text-ink">
-                  Lead Details
-                </h2>
+                <h2 className="text-xl font-bold text-ink">Lead Details</h2>
 
                 <p className="text-sm text-ink-muted">
                   {selectedLead.businessName}
@@ -658,15 +611,11 @@ export default function Leads() {
               >
                 <X size={20} />
               </button>
-
             </div>
 
             <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
-
               <div>
-                <p className="text-sm text-ink-muted">
-                  Business Name
-                </p>
+                <p className="text-sm text-ink-muted">Business Name</p>
 
                 <p className="font-medium text-ink">
                   {selectedLead.businessName}
@@ -674,19 +623,13 @@ export default function Leads() {
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">
-                  Category
-                </p>
+                <p className="text-sm text-ink-muted">Category</p>
 
-                <p className="font-medium text-ink">
-                  {selectedLead.category}
-                </p>
+                <p className="font-medium text-ink">{selectedLead.category}</p>
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">
-                  Contact Person
-                </p>
+                <p className="text-sm text-ink-muted">Contact Person</p>
 
                 <p className="font-medium text-ink">
                   {selectedLead.contactPerson}
@@ -694,39 +637,25 @@ export default function Leads() {
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">
-                  Phone
-                </p>
+                <p className="text-sm text-ink-muted">Phone</p>
 
-                <p className="font-medium text-ink">
-                  {selectedLead.phone}
-                </p>
+                <p className="font-medium text-ink">{selectedLead.phone}</p>
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">
-                  Email
-                </p>
+                <p className="text-sm text-ink-muted">Email</p>
 
-                <p className="font-medium text-ink">
-                  {selectedLead.email}
-                </p>
+                <p className="font-medium text-ink">{selectedLead.email}</p>
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">
-                  City
-                </p>
+                <p className="text-sm text-ink-muted">City</p>
 
-                <p className="font-medium text-ink">
-                  {selectedLead.city}
-                </p>
+                <p className="font-medium text-ink">{selectedLead.city}</p>
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">
-                  Potential Service
-                </p>
+                <p className="text-sm text-ink-muted">Potential Service</p>
 
                 <p className="font-medium text-ink">
                   {selectedLead.potentialService}
@@ -734,9 +663,7 @@ export default function Leads() {
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">
-                  Assigned To
-                </p>
+                <p className="text-sm text-ink-muted">Assigned To</p>
 
                 <p className="font-medium text-ink">
                   {getUserName(selectedLead)}
@@ -744,70 +671,45 @@ export default function Leads() {
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">
-                  Follow-up Date
-                </p>
+                <p className="text-sm text-ink-muted">Follow-up Date</p>
 
                 <p className="font-medium text-ink">
-                  {formatDate(
-                    selectedLead.followUpDate
-                  )}
+                  {formatDate(selectedLead.followUpDate)}
                 </p>
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">
-                  Status
-                </p>
+                <p className="text-sm text-ink-muted">Status</p>
+
+                <p className="font-medium text-ink">{selectedLead.status}</p>
+              </div>
+
+              <div className="md:col-span-2">
+                <p className="text-sm text-ink-muted">Website</p>
 
                 <p className="font-medium text-ink">
-                  {selectedLead.status}
+                  {selectedLead.websiteUrl || "No website"}
                 </p>
               </div>
 
               <div className="md:col-span-2">
-
-                <p className="text-sm text-ink-muted">
-                  Website
-                </p>
+                <p className="text-sm text-ink-muted">Social Media</p>
 
                 <p className="font-medium text-ink">
-                  {selectedLead.websiteUrl ||
-                    "No website"}
+                  {selectedLead.socialMediaUrl || "No social media link"}
                 </p>
-
               </div>
 
               <div className="md:col-span-2">
-
-                <p className="text-sm text-ink-muted">
-                  Social Media
-                </p>
-
-                <p className="font-medium text-ink">
-                  {selectedLead.socialMediaUrl ||
-                    "No social media link"}
-                </p>
-
-              </div>
-
-              <div className="md:col-span-2">
-
-                <p className="text-sm text-ink-muted">
-                  Notes
-                </p>
+                <p className="text-sm text-ink-muted">Notes</p>
 
                 <p className="whitespace-pre-wrap text-ink">
-                  {selectedLead.notes ||
-                    "No notes"}
+                  {selectedLead.notes || "No notes"}
                 </p>
-
               </div>
-
             </div>
 
             <div className="flex justify-end gap-3 border-t border-border p-5">
-
               <button
                 onClick={() => {
                   setShowDetails(false);
@@ -827,37 +729,25 @@ export default function Leads() {
               >
                 Edit Lead
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       )}
 
       {/* ================= ADD / EDIT FORM MODAL ================= */}
 
       {showForm && (
-
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-
           <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded-xl bg-surface">
-
             <div className="flex items-center justify-between border-b border-border p-5">
-
               <div>
-
                 <h2 className="text-xl font-bold text-ink">
-                  {selectedLead
-                    ? "Edit Lead"
-                    : "Add New Lead"}
+                  {selectedLead ? "Edit Lead" : "Add New Lead"}
                 </h2>
 
                 <p className="text-sm text-ink-muted">
                   Enter lead information below
                 </p>
-
               </div>
 
               <button
@@ -869,16 +759,10 @@ export default function Leads() {
               >
                 <X size={20} />
               </button>
-
             </div>
 
-            <form
-              onSubmit={handleSubmit}
-              className="space-y-5 p-5"
-            >
-
+            <form onSubmit={handleSubmit} className="space-y-5 p-5">
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Business Name
@@ -961,15 +845,10 @@ export default function Leads() {
                     onChange={handleChange}
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
                   >
-                    <option value="">
-                      Select Category
-                    </option>
+                    <option value="">Select Category</option>
 
                     {categories.map((item) => (
-                      <option
-                        key={item}
-                        value={item}
-                      >
+                      <option key={item} value={item}>
                         {item}
                       </option>
                     ))}
@@ -1015,15 +894,10 @@ export default function Leads() {
                     onChange={handleChange}
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
                   >
-                    <option value="">
-                      Select Service
-                    </option>
+                    <option value="">Select Service</option>
 
                     {services.map((item) => (
-                      <option
-                        key={item}
-                        value={item}
-                      >
+                      <option key={item} value={item}>
                         {item}
                       </option>
                     ))}
@@ -1042,10 +916,7 @@ export default function Leads() {
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
                   >
                     {statuses.map((item) => (
-                      <option
-                        key={item}
-                        value={item}
-                      >
+                      <option key={item} value={item}>
                         {item}
                       </option>
                     ))}
@@ -1063,18 +934,19 @@ export default function Leads() {
                     onChange={handleChange}
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
                   >
-                    <option value="">
-                      Unassigned
-                    </option>
+                    <option value="">Unassigned</option>
+                    <option value="1">Ali Khan</option>
+                    <option value="1">Ahmad</option>
+                    <option value="1">Abdullah</option>
 
-                    {users.map((user) => (
+                    {/* {users.map((user) => (
                       <option
                         key={user.id}
                         value={user.id}
                       >
                         {user.name}
                       </option>
-                    ))}
+                    ))} */}
                   </select>
                 </div>
 
@@ -1093,7 +965,6 @@ export default function Leads() {
                 </div>
 
                 <div className="md:col-span-2">
-
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Notes
                   </label>
@@ -1105,13 +976,10 @@ export default function Leads() {
                     rows={4}
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
                   />
-
                 </div>
-
               </div>
 
               <div className="flex justify-end gap-3 border-t border-border pt-5">
-
                 <button
                   type="button"
                   onClick={() => {
@@ -1127,51 +995,32 @@ export default function Leads() {
                   type="submit"
                   className="rounded-lg bg-primary px-4 py-2 text-white hover:bg-primary-hover"
                 >
-                  {selectedLead
-                    ? "Update Lead"
-                    : "Add Lead"}
+                  {selectedLead ? "Update Lead" : "Add Lead"}
                 </button>
-
               </div>
-
             </form>
-
           </div>
-
         </div>
-
       )}
 
       {/* ================= DELETE MODAL ================= */}
 
       {showDelete && deleteLead && (
-
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-
           <div className="w-full max-w-md rounded-xl bg-surface">
-
             <div className="p-5">
-
-              <h2 className="text-xl font-bold text-ink">
-                Delete Lead
-              </h2>
+              <h2 className="text-xl font-bold text-ink">Delete Lead</h2>
 
               <p className="mt-2 text-ink-secondary">
-
                 Are you sure you want to delete{" "}
-
                 <span className="font-semibold text-ink">
                   {deleteLead.businessName}
                 </span>
-
                 ?
-
               </p>
-
             </div>
 
             <div className="flex justify-end gap-3 border-t border-border p-5">
-
               <button
                 onClick={() => {
                   setShowDelete(false);
@@ -1182,23 +1031,16 @@ export default function Leads() {
                 Cancel
               </button>
 
-              
-
               <button
-              onClick={handleDelete}
+                onClick={handleDelete}
                 className="rounded-lg bg-error px-4 py-2 text-white hover:bg-red-700"
               >
                 Delete
               </button>
-
             </div>
-
           </div>
-
         </div>
-
       )}
-
     </div>
   );
 }

@@ -77,9 +77,10 @@ const leadSchema = new mongoose.Schema(
     },
 
     assignedTo: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      default: null,
+      // type: mongoose.Schema.Types.ObjectId,
+      // ref: "User",
+      type: String,
+      default: "",
     },
 
     followUpDate: {
