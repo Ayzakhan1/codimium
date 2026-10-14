@@ -1,5 +1,7 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
+import {  useDispatch } from "react-redux";
+import { leadData } from "../../redux/slices/leadSlice";
 import {
   CalendarClock,
   CheckCircle2,
@@ -87,6 +89,10 @@ export default function Leads() {
   const [category, setCategory] = useState("All");
   const [service, setService] = useState("All");
 
+     const dispatch = useDispatch();
+
+
+
   // -----------------------------
   // FORM CHANGE
   // -----------------------------
@@ -109,6 +115,10 @@ export default function Leads() {
     setSelectedLead(null);
     setShowForm(true);
   };
+
+  // -----------------------------
+  //  ADD AND EDIT LEAD API
+  // -----------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -159,23 +169,28 @@ export default function Leads() {
   // -----------------------------
   // GET LEAD API
   // -----------------------------
+  const getLeads = useCallback(async () => {
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/leads/get-leads`,
+      );
+
+      console.log("Get Leads:", response.data);
+      setLeads(response.data.data || []);
+      dispatch(leadData(response.data.data || []));
+    } catch (error) {
+      console.error("Error getting leads:", error);
+    }
+  }, []);
 
   useEffect(() => {
-    const getLeads = async () => {
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/leads/get-leads`,
-        );
-
-        console.log("get lEADs:", response.data);
-
-        setLeads(response.data.data);
-      } catch (error) {
-        console.error("Error getting lead:", error);
-      }
+    const fetchLeads = async () => {
+      await getLeads();
     };
-    getLeads();
-  }, []);
+
+    fetchLeads();
+  }, [getLeads]);
+
 
   // -----------------------------
   // DELETE LEAD API
@@ -203,6 +218,26 @@ export default function Leads() {
     }
   };
 
+  // -----------------------------
+  // SEARCH LEAD API
+  // -----------------------------
+
+  const searchLeads = async (e) => {
+    if (e.target.value) {
+      try {
+        const response = await axios.get(
+          `${import.meta.env.VITE_API_URL}/api/leads/search-leads/${e.target.value}`,
+        );
+
+        console.log("Search Results:", response.data.data);
+        setLeads(response.data.data);
+      } catch (error) {
+        console.log("Search Error:", error.response?.data);
+      }
+    } else {
+      getLeads();
+    }
+  };
 
   // -----------------------------
   // EDIT UI ONLY
@@ -383,10 +418,23 @@ export default function Leads() {
       {/* ================= FILTERS ================= */}
 
       <div className="rounded-xl border border-border bg-surface p-4">
-        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-          {/* STATUS */}
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-10">
+          {/* SEARCH INPUT */}
+          <div className="md:col-span-4">
+            <label className="mb-1 block text-sm font-medium text-ink">
+              Search
+            </label>
 
-          <div>
+            <input
+              type="text"
+              placeholder="Search..."
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
+              onChange={searchLeads}
+            />
+          </div>
+
+          {/* STATUS */}
+          <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-medium text-ink">
               Status
             </label>
@@ -407,8 +455,7 @@ export default function Leads() {
           </div>
 
           {/* CATEGORY */}
-
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-medium text-ink">
               Category
             </label>
@@ -429,8 +476,7 @@ export default function Leads() {
           </div>
 
           {/* SERVICE */}
-
-          <div>
+          <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-medium text-ink">
               Service
             </label>
@@ -452,7 +498,6 @@ export default function Leads() {
         </div>
 
         {/* FILTER COUNT */}
-
         <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
           <p className="text-sm text-ink-muted">
             Showing{" "}

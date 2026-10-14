@@ -97,9 +97,42 @@ const updateLead = async (req, res) => {
   }
 };
 
+const searchLeads = async (req, res) => {
+  try {
+    const key = req.params.key;
+
+    const data = await Leads.find({
+      $or: [
+        { businessName: { $regex: new RegExp(key, "i") } },
+        { contactPerson: { $regex: new RegExp(key, "i") } },
+        { phone: { $regex: new RegExp(key, "i") } },
+        { email: { $regex: new RegExp(key, "i") } },
+      ],
+    });
+
+    if (data.length === 0) {
+      return res.status(404).json({
+        message: "No data found",
+      });
+    }
+
+    res.status(200).json({
+      message: "Successful",
+      data: data,
+    });
+  } catch (error) {
+    console.log(error);
+
+    res.status(500).json({
+      message: "Internal server error",
+    });
+  }
+};
+
 module.exports ={
     addLeads,
     getLeads,
     deleteLead,
-    updateLead
+    updateLead,
+    searchLeads
 };

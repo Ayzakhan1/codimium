@@ -1,4 +1,3 @@
-import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   ArrowUpRight,
@@ -16,6 +15,7 @@ import {
   Users,
   XCircle,
 } from "lucide-react";
+import { useSelector } from "react-redux";
 
 const STATUS_LIST = [
   "New",
@@ -77,7 +77,8 @@ const formatDate = (date) => {
   });
 };
 
-// Check karta hai ke date aaj ki hai ya nahi
+// daye check 
+
 const isToday = (date) => {
   if (!date) return false;
 
@@ -120,51 +121,12 @@ const getFollowUpText = (date) => {
 };
 
 const Dashboard = () => {
-  const [leads, setLeads] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
-  // Dashboard ke liye leads load karna
-  useEffect(() => {
-    const loadLeads = async () => {
-      try {
-        setLoading(true);
-        setError("");
-
-        const token = localStorage.getItem("token");
-
-        const response = await fetch("/api/leads", {
-          headers: {
-            "Content-Type": "application/json",
-            ...(token && {
-              Authorization: `Bearer ${token}`,
-            }),
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to load leads");
-        }
-
-        const data = await response.json();
-
-        if (Array.isArray(data)) {
-          setLeads(data);
-        } else {
-          setLeads(data.leads || []);
-        }
-      } catch (error) {
-        setError(error.message || "Something went wrong");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    loadLeads();
 
 
-  }, []);
+const leads = useSelector((state) => state.leads.leads);
 
+ 
+ console.log("Dashboard leads:", leads);
 
 
 
@@ -380,15 +342,7 @@ const Dashboard = () => {
         </div>
       </div>
 
-      {/* ================================
-          ERROR
-      ================================= */}
-
-      {error && (
-        <div className="rounded-xl border border-error bg-background px-4 py-3 text-sm text-error">
-          {error}
-        </div>
-      )}
+    
 
       {/* ================================
           STAT CARDS
@@ -410,7 +364,7 @@ const Dashboard = () => {
                   </p>
 
                   <p className="mt-2 text-2xl font-bold text-ink">
-                    {loading ? "—" : card.value}
+                    {card.value}
                   </p>
                 </div>
 
@@ -510,11 +464,7 @@ const Dashboard = () => {
           </div>
 
           <div className="mt-5 space-y-3">
-            {loading ? (
-              <p className="text-sm text-ink-muted">
-                Loading follow-ups...
-              </p>
-            ) : todayFollowUps.length === 0 ? (
+            { todayFollowUps.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border bg-background px-4 py-8 text-center">
                 <Clock3
                   className="mx-auto text-ink-muted"
@@ -596,11 +546,7 @@ const Dashboard = () => {
           </div>
 
           <div className="mt-5 overflow-x-auto">
-            {loading ? (
-              <p className="py-8 text-center text-sm text-ink-muted">
-                Loading leads...
-              </p>
-            ) : recentLeads.length === 0 ? (
+            {recentLeads.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border bg-background px-4 py-10 text-center">
                 <FileText
                   className="mx-auto text-ink-muted"
@@ -844,11 +790,7 @@ const Dashboard = () => {
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          {loading ? (
-            <p className="text-sm text-ink-muted">
-              Loading upcoming follow-ups...
-            </p>
-          ) : upcomingFollowUps.length === 0 ? (
+          { upcomingFollowUps.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-background px-4 py-7 text-center md:col-span-2 xl:col-span-3">
               <Clock3
                 className="mx-auto text-ink-muted"

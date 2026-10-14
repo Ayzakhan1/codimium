@@ -1,4 +1,4 @@
-const { addLeads, getLeads, deleteLead, updateLead } = require("./leadController/leads");
+const { addLeads, getLeads, deleteLead, updateLead, searchLeads } = require("./leadController/leads");
 const { registerUser, login, createAdmin } = require("./auth/authController");
 
 module.exports = {
@@ -8,5 +8,6 @@ module.exports = {
     addLeads,
     getLeads,
     deleteLead,
-    updateLead
+    updateLead,
+    searchLeads
 };
