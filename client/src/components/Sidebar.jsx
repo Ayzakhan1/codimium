@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Users,
@@ -10,7 +10,22 @@ import {
 } from "lucide-react";
 
 const Sidebar = () => {
-  const menuItems = [
+  const navigate = useNavigate();
+
+  // Get logged-in user
+  let currentUser = null;
+
+  try {
+    currentUser = JSON.parse(localStorage.getItem("user") || "null");
+  } catch (error) {
+    console.error("Unable to read user:", error);
+  }
+
+  const isAdmin = currentUser?.role === "admin";
+
+  // Admin menu
+ const adminMenuItems = [
+
     {
       name: "Dashboard",
       path: "/admin/dashboard",
@@ -43,6 +58,41 @@ const Sidebar = () => {
     },
   ];
 
+  // Team Member menu
+  const userMenuItems = [
+    {
+      name: "Dashboard",
+      path: "/user/dashboard",
+      icon: LayoutDashboard,
+    },
+    {
+      name: "My Leads",
+      path: "/user/leads",
+      icon: UserRoundPlus,
+    },
+    {
+      name: "My Pipeline",
+      path: "/user/pipeline",
+      icon: KanbanSquare,
+    },
+    {
+      name: "My Follow-ups",
+      path: "/user/follow-ups",
+      icon: CalendarClock,
+    },
+  ];
+
+  // Select menu according to role
+  const menuItems = isAdmin ? adminMenuItems : userMenuItems;
+
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
+
+    navigate("/");
+  };
+
   return (
     <aside
       className="
@@ -61,7 +111,7 @@ const Sidebar = () => {
         max-md:right-0
         max-md:w-full
         max-md:min-h-0
-        max-md:h-[68px]
+        max-md:h-17
         max-md:p-2
         max-md:border-r-0
         max-md:border-t
@@ -69,6 +119,7 @@ const Sidebar = () => {
       "
     >
       {/* Navigation */}
+
       <nav
         className="
           space-y-2
@@ -119,69 +170,72 @@ const Sidebar = () => {
               `
               }
             >
-              <Icon
-                size={21}
-                strokeWidth={2}
-                className="shrink-0"
-              />
+              <Icon size={21} strokeWidth={2} className="shrink-0" />
 
               {/* Name - Desktop only */}
-              <span className="max-md:hidden">
-                {item.name}
-              </span>
+
+              <span className="max-md:hidden">{item.name}</span>
             </NavLink>
           );
         })}
+
+        {/* Mobile Logout */}
+
+        <button
+          type="button"
+          title="Logout"
+          onClick={handleLogout}
+          className="
+            hidden
+            max-md:flex
+            max-md:flex-1
+            max-md:flex-col
+            max-md:items-center
+            max-md:justify-center
+            max-md:gap-1
+            max-md:rounded-md
+            max-md:px-1
+            max-md:py-1.5
+            max-md:text-ink-secondary
+            max-md:hover:bg-background
+            max-md:hover:text-primary
+          "
+        >
+          <LogOut size={21} strokeWidth={2} />
+          <span className="text-xs">Logout</span>
+        </button>
       </nav>
 
-      {/* Logout */}
+      {/* Desktop Logout */}
+
       <button
         type="button"
         title="Logout"
+        onClick={handleLogout}
         className="
+          mt-auto
           flex
           items-center
-          mt-auto
           gap-3
           rounded-lg
+          bg-primary
           px-4
           py-3
           font-medium
-          bg-primary
           text-white
-          hover:bg-primary-hover
           transition-all
           duration-200
+          hover:bg-primary-hover
 
-          max-md:flex-1
-          max-md:flex-col
-          max-md:justify-center
-          max-md:items-center
-          max-md:gap-1
-          max-md:px-1
-          max-md:py-1.5
-          max-md:rounded-md
-          max-md:mt-0
-          max-md:bg-transparent
-          max-md:text-ink-secondary
-          max-md:hover:bg-background
-          max-md:hover:text-primary
+          max-md:hidden
         "
       >
-        <LogOut
-          size={21}
-          strokeWidth={2}
-          className="shrink-0"
-        />
+        <LogOut size={21} strokeWidth={2} className="shrink-0" />
 
-        {/* Name - Desktop only */}
-        <span className="max-md:hidden">
-          Logout
-        </span>
+        <span>Logout</span>
       </button>
     </aside>
   );
 };
 
 export default Sidebar;
-

@@ -1,7 +1,12 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import axios from "axios";
-import {  useDispatch } from "react-redux";
-import { leadData } from "../../redux/slices/leadSlice";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  addLead,
+  updateLead,
+  removeLead,
+} from "../../redux/slices/leadSlice";
+
 import {
   CalendarClock,
   CheckCircle2,
@@ -54,8 +59,8 @@ const categories = [
 
 const users = [
   { id: "1", name: "Ali Khan" },
-  { id: "2", name: "Ahmed" },
-  { id: "3", name: "Sara" },
+  { id: "2", name: "Ahmad" },
+  { id: "3", name: "Abdullah" },
 ];
 
 const emptyForm = {
@@ -75,8 +80,19 @@ const emptyForm = {
 };
 
 export default function Leads() {
-  const [form, setForm] = useState(emptyForm);
-  const [leads, setLeads] = useState([]);
+  // -----------------------------
+  // REDUX
+  // -----------------------------
+
+  const dispatch = useDispatch();
+
+  const reduxLeads = useSelector(
+    (state) => state.leads.leads || []
+  );
+
+  // -----------------------------
+  // LOCAL UI STATE
+  // -----------------------------
 
   const [showForm, setShowForm] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -89,9 +105,16 @@ export default function Leads() {
   const [category, setCategory] = useState("All");
   const [service, setService] = useState("All");
 
-     const dispatch = useDispatch();
+  const [form, setForm] = useState(emptyForm);
 
+  // Search results are separate from the complete Redux list.
+  // null means show all Redux leads.
+  const [searchTerm, setSearchTerm] = useState("");
+  const [searchResults, setSearchResults] = useState(null);
 
+  // The page uses search results when searching,
+  // otherwise it uses the shared Redux data.
+  const leads = searchResults ?? reduxLeads;
 
   // -----------------------------
   // FORM CHANGE
@@ -111,86 +134,87 @@ export default function Leads() {
   // -----------------------------
 
   const addNewLead = () => {
-    setForm(emptyForm);
+    setForm({ ...emptyForm });
     setSelectedLead(null);
     setShowForm(true);
   };
 
   // -----------------------------
-  //  ADD AND EDIT LEAD API
+  // RESET SEARCH
+  // -----------------------------
+
+  const resetSearch = () => {
+    setSearchTerm("");
+    setSearchResults(null);
+  };
+
+  // -----------------------------
+  // ADD AND UPDATE LEAD API
   // -----------------------------
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     console.log("FORM DATA:", form);
 
+    // -----------------------------
+    // UPDATE LEAD
+    // -----------------------------
+
     if (selectedLead) {
-      // -----------------------------
-      // UPDATE LEAD API
-      // -----------------------------
       try {
         const response = await axios.put(
           `${import.meta.env.VITE_API_URL}/api/leads/update-lead/${selectedLead._id}`,
-          form,
+          form
         );
-        console.log("Lead updated:", response.data);
 
-        setLeads((prevLeads) =>
-          prevLeads.map((lead) =>
-            lead._id === selectedLead._id ? response.data.data : lead,
-          ),
-        );
+        // Update the lead in Redux.
+        dispatch(updateLead(response.data.data));
+
         setShowForm(false);
+        setSelectedLead(null);
+        setForm({ ...emptyForm });
+
+        // Refresh the list displayed on this page.
+        resetSearch();
+
+        console.log("Lead updated:", response.data);
       } catch (error) {
-        console.log("Error updating lead:", error);
+        console.error(
+          "Error updating lead:",
+          error.response?.data || error.message
+        );
       }
     } else {
       // -----------------------------
-      // ADD LEAD API
+      // ADD LEAD
       // -----------------------------
 
       try {
         const response = await axios.post(
-          `${import.meta.env.VITE_API_URL}/api/leads/add-leads`,
-          form,
+          `${import.meta.env.VITE_API_URL}/api/leads/create-lead`,
+          form
         );
 
-        console.log("Lead added:", response.data);
-        setLeads((prevLeads) => [...prevLeads, response.data.data]);
+        // Add the new lead to Redux.
+        dispatch(addLead(response.data.data));
 
-        setForm(emptyForm);
+        setForm({ ...emptyForm });
         setShowForm(false);
+        setSelectedLead(null);
+
+        // Show the complete list, including the new lead.
+        resetSearch();
+
+        console.log("Lead added:", response.data);
       } catch (error) {
-        console.error("Error adding lead:", error);
+        console.error(
+          "Error adding lead:",
+          error.response?.data || error.message
+        );
       }
     }
   };
-
-  // -----------------------------
-  // GET LEAD API
-  // -----------------------------
-  const getLeads = useCallback(async () => {
-    try {
-      const response = await axios.get(
-        `${import.meta.env.VITE_API_URL}/api/leads/get-leads`,
-      );
-
-      console.log("Get Leads:", response.data);
-      setLeads(response.data.data || []);
-      dispatch(leadData(response.data.data || []));
-    } catch (error) {
-      console.error("Error getting leads:", error);
-    }
-  }, []);
-
-  useEffect(() => {
-    const fetchLeads = async () => {
-      await getLeads();
-    };
-
-    fetchLeads();
-  }, [getLeads]);
-
 
   // -----------------------------
   // DELETE LEAD API
@@ -201,20 +225,24 @@ export default function Leads() {
 
     try {
       const response = await axios.delete(
-        `${import.meta.env.VITE_API_URL}/api/leads/delete-lead/${deleteLead._id}`,
+        `${import.meta.env.VITE_API_URL}/api/leads/delete-lead/${deleteLead._id}`
       );
+
+      // Remove the deleted lead from Redux.
+      dispatch(removeLead(deleteLead._id));
 
       console.log("Lead deleted:", response.data);
 
-      setLeads((prevLeads) =>
-        prevLeads.filter((lead) => lead._id !== deleteLead._id),
-      );
-
-      // Modal close
       setShowDelete(false);
       setDeleteLead(null);
+
+      // Display the updated complete list.
+      resetSearch();
     } catch (error) {
-      console.error("Error deleting lead:", error);
+      console.error(
+        "Error deleting lead:",
+        error.response?.data || error.message
+      );
     }
   };
 
@@ -223,24 +251,36 @@ export default function Leads() {
   // -----------------------------
 
   const searchLeads = async (e) => {
-    if (e.target.value) {
-      try {
-        const response = await axios.get(
-          `${import.meta.env.VITE_API_URL}/api/leads/search-leads/${e.target.value}`,
-        );
+    const value = e.target.value;
 
-        console.log("Search Results:", response.data.data);
-        setLeads(response.data.data);
-      } catch (error) {
-        console.log("Search Error:", error.response?.data);
-      }
-    } else {
-      getLeads();
+    setSearchTerm(value);
+
+    if (!value.trim()) {
+      // Empty search shows all leads from Redux.
+      setSearchResults(null);
+      return;
+    }
+
+    try {
+      const response = await axios.get(
+        `${import.meta.env.VITE_API_URL}/api/leads/search-leads/${encodeURIComponent(value.trim())}`
+      );
+
+      console.log("Search Results:", response.data.data);
+
+      setSearchResults(response.data.data || []);
+    } catch (error) {
+      console.error(
+        "Search Error:",
+        error.response?.data || error.message
+      );
+
+      setSearchResults([]);
     }
   };
 
   // -----------------------------
-  // EDIT UI ONLY
+  // EDIT LEAD
   // -----------------------------
 
   const openEditForm = (lead) => {
@@ -258,15 +298,20 @@ export default function Leads() {
       potentialService: lead.potentialService || "",
       status: lead.status || "New",
       notes: lead.notes || "",
-      assignedTo: lead.assignedTo || "",
-      followUpDate: lead.followUpDate ? lead.followUpDate.slice(0, 10) : "",
+      assignedTo:
+        typeof lead.assignedTo === "object"
+          ? lead.assignedTo?._id || ""
+          : lead.assignedTo || "",
+      followUpDate: lead.followUpDate
+        ? lead.followUpDate.slice(0, 10)
+        : "",
     });
 
     setShowForm(true);
   };
 
   // -----------------------------
-  // DELETE UI ONLY
+  // OPEN DELETE MODAL
   // -----------------------------
 
   const openDeleteModal = (lead) => {
@@ -289,28 +334,20 @@ export default function Leads() {
   };
 
   // -----------------------------
-  // INITIALS
-  // -----------------------------
-
-  // const getInitials = (name) => {
-  //   if (!name) return "NA";
-
-  //   return name
-  //     .split(" ")
-  //     .slice(0, 2)
-  //     .map((word) => word[0])
-  //     .join("")
-  //     .toUpperCase();
-  // };
-
-  // -----------------------------
   // ASSIGNED USER
   // -----------------------------
 
   const getUserName = (lead) => {
     if (!lead?.assignedTo) return "Unassigned";
 
-    const user = users.find((item) => item.id === lead.assignedTo);
+    const assignedId =
+      typeof lead.assignedTo === "object"
+        ? lead.assignedTo?._id
+        : lead.assignedTo;
+
+    const user = users.find(
+      (item) => item.id === String(assignedId)
+    );
 
     return user ? user.name : "Assigned";
   };
@@ -320,11 +357,15 @@ export default function Leads() {
   // -----------------------------
 
   const filteredLeads = leads.filter((lead) => {
-    const statusMatch = status === "All" || lead.status === status;
+    const statusMatch =
+      status === "All" || lead.status === status;
 
-    const categoryMatch = category === "All" || lead.category === category;
+    const categoryMatch =
+      category === "All" || lead.category === category;
 
-    const serviceMatch = service === "All" || lead.potentialService === service;
+    const serviceMatch =
+      service === "All" ||
+      lead.potentialService === service;
 
     return statusMatch && categoryMatch && serviceMatch;
   });
@@ -335,11 +376,21 @@ export default function Leads() {
 
   const totalLeads = leads.length;
 
-  const newLeads = leads.filter((lead) => lead.status === "New").length;
+  const newLeads = leads.filter(
+    (lead) => lead.status === "New"
+  ).length;
 
-  const wonLeads = leads.filter((lead) => lead.status === "Won").length;
+  const wonLeads = leads.filter(
+    (lead) => lead.status === "Won"
+  ).length;
 
-  const followUpLeads = leads.filter((lead) => lead.followUpDate).length;
+  const followUpLeads = leads.filter(
+    (lead) => lead.followUpDate
+  ).length;
+
+  // -----------------------------
+  // UI
+  // -----------------------------
 
   return (
     <div className="space-y-6 bg-background">
@@ -347,9 +398,13 @@ export default function Leads() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-ink">CRM Management</h1>
+          <h1 className="text-2xl font-bold text-ink">
+            CRM Management
+          </h1>
 
-          <p className="text-ink-secondary">Manage your leads and customers</p>
+          <p className="text-ink-secondary">
+            Manage your leads and customers
+          </p>
         </div>
 
         <button
@@ -367,9 +422,13 @@ export default function Leads() {
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-ink-muted">Total Leads</p>
+              <p className="text-sm text-ink-muted">
+                Total Leads
+              </p>
 
-              <h2 className="mt-1 text-2xl font-bold text-ink">{totalLeads}</h2>
+              <h2 className="mt-1 text-2xl font-bold text-ink">
+                {totalLeads}
+              </h2>
             </div>
 
             <Users size={24} className="text-primary" />
@@ -379,9 +438,13 @@ export default function Leads() {
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-ink-muted">New Leads</p>
+              <p className="text-sm text-ink-muted">
+                New Leads
+              </p>
 
-              <h2 className="mt-1 text-2xl font-bold text-ink">{newLeads}</h2>
+              <h2 className="mt-1 text-2xl font-bold text-ink">
+                {newLeads}
+              </h2>
             </div>
 
             <User size={24} className="text-primary" />
@@ -391,9 +454,13 @@ export default function Leads() {
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-ink-muted">Won Leads</p>
+              <p className="text-sm text-ink-muted">
+                Won Leads
+              </p>
 
-              <h2 className="mt-1 text-2xl font-bold text-ink">{wonLeads}</h2>
+              <h2 className="mt-1 text-2xl font-bold text-ink">
+                {wonLeads}
+              </h2>
             </div>
 
             <CheckCircle2 size={24} className="text-success" />
@@ -403,7 +470,9 @@ export default function Leads() {
         <div className="rounded-xl border border-border bg-surface p-5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-ink-muted">Follow-ups</p>
+              <p className="text-sm text-ink-muted">
+                Follow-ups
+              </p>
 
               <h2 className="mt-1 text-2xl font-bold text-ink">
                 {followUpLeads}
@@ -420,6 +489,7 @@ export default function Leads() {
       <div className="rounded-xl border border-border bg-surface p-4">
         <div className="grid grid-cols-1 gap-4 md:grid-cols-10">
           {/* SEARCH INPUT */}
+
           <div className="md:col-span-4">
             <label className="mb-1 block text-sm font-medium text-ink">
               Search
@@ -427,13 +497,15 @@ export default function Leads() {
 
             <input
               type="text"
+              value={searchTerm}
               placeholder="Search..."
-              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
               onChange={searchLeads}
+              className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
             />
           </div>
 
           {/* STATUS */}
+
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-medium text-ink">
               Status
@@ -455,6 +527,7 @@ export default function Leads() {
           </div>
 
           {/* CATEGORY */}
+
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-medium text-ink">
               Category
@@ -476,6 +549,7 @@ export default function Leads() {
           </div>
 
           {/* SERVICE */}
+
           <div className="md:col-span-2">
             <label className="mb-1 block text-sm font-medium text-ink">
               Service
@@ -498,6 +572,7 @@ export default function Leads() {
         </div>
 
         {/* FILTER COUNT */}
+
         <div className="mt-4 flex items-center justify-between border-t border-border pt-4">
           <p className="text-sm text-ink-muted">
             Showing{" "}
@@ -525,9 +600,14 @@ export default function Leads() {
       <div className="overflow-hidden rounded-xl border border-border bg-surface">
         {filteredLeads.length === 0 ? (
           <div className="py-16 text-center">
-            <Users size={40} className="mx-auto mb-3 text-ink-muted" />
+            <Users
+              size={40}
+              className="mx-auto mb-3 text-ink-muted"
+            />
 
-            <h3 className="font-semibold text-ink">No leads found</h3>
+            <h3 className="font-semibold text-ink">
+              No leads found
+            </h3>
 
             <p className="mt-1 text-sm text-ink-muted">
               Add a new lead to get started.
@@ -538,36 +618,52 @@ export default function Leads() {
             <table className="w-full text-left">
               <thead className="border-b border-border bg-background">
                 <tr>
-                  <th className="px-5 py-3 text-sm text-ink">Business</th>
+                  <th className="px-5 py-3 text-sm text-ink">
+                    Business
+                  </th>
 
-                  <th className="px-5 py-3 text-sm text-ink">Contact</th>
+                  <th className="px-5 py-3 text-sm text-ink">
+                    Contact
+                  </th>
 
-                  <th className="px-5 py-3 text-sm text-ink">Location</th>
+                  <th className="px-5 py-3 text-sm text-ink">
+                    Location
+                  </th>
 
-                  <th className="px-5 py-3 text-sm text-ink">Service</th>
+                  <th className="px-5 py-3 text-sm text-ink">
+                    Service
+                  </th>
 
-                  <th className="px-5 py-3 text-sm text-ink">Status</th>
+                  <th className="px-5 py-3 text-sm text-ink">
+                    Status
+                  </th>
 
-                  <th className="px-5 py-3 text-sm text-ink">Actions</th>
+                  <th className="px-5 py-3 text-sm text-ink">
+                    Actions
+                  </th>
                 </tr>
               </thead>
 
               <tbody>
                 {filteredLeads.map((lead) => (
                   <tr
-                    key={lead.id}
+                    key={lead._id}
                     className="border-b border-border last:border-0"
                   >
-                    {/* Business */}
+                    {/* BUSINESS */}
+
                     <td className="px-5 py-4">
                       <p className="font-medium text-ink">
                         {lead.businessName}
                       </p>
 
-                      <p className="text-sm text-ink-muted">{lead.category}</p>
+                      <p className="text-sm text-ink-muted">
+                        {lead.category}
+                      </p>
                     </td>
 
-                    {/* Contact */}
+                    {/* CONTACT */}
+
                     <td className="px-5 py-4">
                       <p className="font-medium text-ink">
                         {lead.contactPerson}
@@ -579,7 +675,8 @@ export default function Leads() {
                       </p>
                     </td>
 
-                    {/* Location */}
+                    {/* LOCATION */}
+
                     <td className="px-5 py-4">
                       <p className="flex items-center gap-1 text-ink">
                         <MapPin size={14} />
@@ -587,17 +684,20 @@ export default function Leads() {
                       </p>
                     </td>
 
-                    {/* Service */}
+                    {/* SERVICE */}
+
                     <td className="px-5 py-4 text-ink">
                       {lead.potentialService}
                     </td>
 
-                    {/* Status */}
+                    {/* STATUS */}
+
                     <td className="px-5 py-4 text-ink">
                       {lead.status || "New"}
                     </td>
 
-                    {/* Actions */}
+                    {/* ACTIONS */}
+
                     <td className="px-5 py-4">
                       <div className="flex items-center gap-2">
                         <button
@@ -606,6 +706,7 @@ export default function Leads() {
                             setShowDetails(true);
                           }}
                           className="rounded-lg p-2 text-ink-secondary hover:bg-background hover:text-primary"
+                          title="View Lead"
                         >
                           <Eye size={17} />
                         </button>
@@ -613,6 +714,7 @@ export default function Leads() {
                         <button
                           onClick={() => openEditForm(lead)}
                           className="rounded-lg p-2 text-ink-secondary hover:bg-background hover:text-primary"
+                          title="Edit Lead"
                         >
                           <Edit3 size={17} />
                         </button>
@@ -620,6 +722,7 @@ export default function Leads() {
                         <button
                           onClick={() => openDeleteModal(lead)}
                           className="rounded-lg p-2 text-error hover:bg-red-50"
+                          title="Delete Lead"
                         >
                           <Trash2 size={17} />
                         </button>
@@ -640,7 +743,9 @@ export default function Leads() {
           <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-xl bg-surface">
             <div className="flex items-center justify-between border-b border-border p-5">
               <div>
-                <h2 className="text-xl font-bold text-ink">Lead Details</h2>
+                <h2 className="text-xl font-bold text-ink">
+                  Lead Details
+                </h2>
 
                 <p className="text-sm text-ink-muted">
                   {selectedLead.businessName}
@@ -660,7 +765,9 @@ export default function Leads() {
 
             <div className="grid grid-cols-1 gap-5 p-5 md:grid-cols-2">
               <div>
-                <p className="text-sm text-ink-muted">Business Name</p>
+                <p className="text-sm text-ink-muted">
+                  Business Name
+                </p>
 
                 <p className="font-medium text-ink">
                   {selectedLead.businessName}
@@ -670,11 +777,15 @@ export default function Leads() {
               <div>
                 <p className="text-sm text-ink-muted">Category</p>
 
-                <p className="font-medium text-ink">{selectedLead.category}</p>
+                <p className="font-medium text-ink">
+                  {selectedLead.category}
+                </p>
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">Contact Person</p>
+                <p className="text-sm text-ink-muted">
+                  Contact Person
+                </p>
 
                 <p className="font-medium text-ink">
                   {selectedLead.contactPerson}
@@ -684,23 +795,31 @@ export default function Leads() {
               <div>
                 <p className="text-sm text-ink-muted">Phone</p>
 
-                <p className="font-medium text-ink">{selectedLead.phone}</p>
+                <p className="font-medium text-ink">
+                  {selectedLead.phone}
+                </p>
               </div>
 
               <div>
                 <p className="text-sm text-ink-muted">Email</p>
 
-                <p className="font-medium text-ink">{selectedLead.email}</p>
+                <p className="font-medium text-ink">
+                  {selectedLead.email}
+                </p>
               </div>
 
               <div>
                 <p className="text-sm text-ink-muted">City</p>
 
-                <p className="font-medium text-ink">{selectedLead.city}</p>
+                <p className="font-medium text-ink">
+                  {selectedLead.city}
+                </p>
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">Potential Service</p>
+                <p className="text-sm text-ink-muted">
+                  Potential Service
+                </p>
 
                 <p className="font-medium text-ink">
                   {selectedLead.potentialService}
@@ -708,7 +827,9 @@ export default function Leads() {
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">Assigned To</p>
+                <p className="text-sm text-ink-muted">
+                  Assigned To
+                </p>
 
                 <p className="font-medium text-ink">
                   {getUserName(selectedLead)}
@@ -716,7 +837,9 @@ export default function Leads() {
               </div>
 
               <div>
-                <p className="text-sm text-ink-muted">Follow-up Date</p>
+                <p className="text-sm text-ink-muted">
+                  Follow-up Date
+                </p>
 
                 <p className="font-medium text-ink">
                   {formatDate(selectedLead.followUpDate)}
@@ -726,7 +849,9 @@ export default function Leads() {
               <div>
                 <p className="text-sm text-ink-muted">Status</p>
 
-                <p className="font-medium text-ink">{selectedLead.status}</p>
+                <p className="font-medium text-ink">
+                  {selectedLead.status}
+                </p>
               </div>
 
               <div className="md:col-span-2">
@@ -738,10 +863,13 @@ export default function Leads() {
               </div>
 
               <div className="md:col-span-2">
-                <p className="text-sm text-ink-muted">Social Media</p>
+                <p className="text-sm text-ink-muted">
+                  Social Media
+                </p>
 
                 <p className="font-medium text-ink">
-                  {selectedLead.socialMediaUrl || "No social media link"}
+                  {selectedLead.socialMediaUrl ||
+                    "No social media link"}
                 </p>
               </div>
 
@@ -806,8 +934,13 @@ export default function Leads() {
               </button>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5 p-5">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-5 p-5"
+            >
               <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                {/* BUSINESS NAME */}
+
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Business Name
@@ -823,6 +956,8 @@ export default function Leads() {
                   />
                 </div>
 
+                {/* CONTACT PERSON */}
+
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Contact Person
@@ -836,6 +971,8 @@ export default function Leads() {
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
                   />
                 </div>
+
+                {/* PHONE */}
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
@@ -851,6 +988,8 @@ export default function Leads() {
                   />
                 </div>
 
+                {/* EMAIL */}
+
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Email
@@ -865,6 +1004,8 @@ export default function Leads() {
                   />
                 </div>
 
+                {/* CITY */}
+
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
                     City
@@ -878,6 +1019,8 @@ export default function Leads() {
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
                   />
                 </div>
+
+                {/* CATEGORY */}
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
@@ -900,6 +1043,8 @@ export default function Leads() {
                   </select>
                 </div>
 
+                {/* WEBSITE URL */}
+
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Website URL
@@ -914,6 +1059,8 @@ export default function Leads() {
                   />
                 </div>
 
+                {/* SOCIAL MEDIA URL */}
+
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Social Media URL
@@ -927,6 +1074,8 @@ export default function Leads() {
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
                   />
                 </div>
+
+                {/* POTENTIAL SERVICE */}
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
@@ -949,6 +1098,8 @@ export default function Leads() {
                   </select>
                 </div>
 
+                {/* STATUS */}
+
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Status
@@ -968,6 +1119,8 @@ export default function Leads() {
                   </select>
                 </div>
 
+                {/* ASSIGNED TO */}
+
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Assigned To
@@ -980,20 +1133,16 @@ export default function Leads() {
                     className="w-full rounded-lg border border-border bg-surface px-3 py-2 text-ink outline-none focus:border-primary"
                   >
                     <option value="">Unassigned</option>
-                    <option value="1">Ali Khan</option>
-                    <option value="1">Ahmad</option>
-                    <option value="1">Abdullah</option>
 
-                    {/* {users.map((user) => (
-                      <option
-                        key={user.id}
-                        value={user.id}
-                      >
+                    {users.map((user) => (
+                      <option key={user.id} value={user.id}>
                         {user.name}
                       </option>
-                    ))} */}
+                    ))}
                   </select>
                 </div>
+
+                {/* FOLLOW-UP DATE */}
 
                 <div>
                   <label className="mb-1 block text-sm font-medium text-ink">
@@ -1009,6 +1158,8 @@ export default function Leads() {
                   />
                 </div>
 
+                {/* NOTES */}
+
                 <div className="md:col-span-2">
                   <label className="mb-1 block text-sm font-medium text-ink">
                     Notes
@@ -1023,6 +1174,8 @@ export default function Leads() {
                   />
                 </div>
               </div>
+
+              {/* FORM BUTTONS */}
 
               <div className="flex justify-end gap-3 border-t border-border pt-5">
                 <button
@@ -1054,7 +1207,9 @@ export default function Leads() {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
           <div className="w-full max-w-md rounded-xl bg-surface">
             <div className="p-5">
-              <h2 className="text-xl font-bold text-ink">Delete Lead</h2>
+              <h2 className="text-xl font-bold text-ink">
+                Delete Lead
+              </h2>
 
               <p className="mt-2 text-ink-secondary">
                 Are you sure you want to delete{" "}

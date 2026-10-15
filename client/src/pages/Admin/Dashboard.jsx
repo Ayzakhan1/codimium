@@ -570,7 +570,7 @@ const leads = useSelector((state) => state.leads.leads);
                 </Link>
               </div>
             ) : (
-              <table className="w-full min-w-[720px] border-collapse">
+              <table className="w-full min-w-180 border-collapse">
                 <thead>
                   <tr className="border-b border-border text-left">
                     <th className="pb-3 text-xs font-semibold uppercase tracking-wide text-ink-muted">

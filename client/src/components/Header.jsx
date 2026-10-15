@@ -51,7 +51,7 @@ const Header = () => {
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-border bg-surface/95 backdrop-blur-md">
-      <div className="flex h-[72px] items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="flex h-18 items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* ================= LOGO ================= */}
         <button
           onClick={goToDashboard}
@@ -101,7 +101,7 @@ const Header = () => {
 
             {/* User Information */}
             <div className="hidden min-w-0 text-left sm:block">
-              <p className="max-w-[150px] truncate text-sm font-semibold text-ink">
+              <p className="max-w-37.5 truncate text-sm font-semibold text-ink">
                 {user?.name || "User"}
               </p>
 
@@ -121,9 +121,9 @@ const Header = () => {
 
           {/* ================= DROPDOWN ================= */}
           {showMenu && (
-            <div className="absolute right-0 mt-3 w-[260px] overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_15px_45px_rgba(15,23,42,0.12)]">
+            <div className="absolute right-0 mt-3 w-65 overflow-hidden rounded-2xl border border-border bg-surface shadow-[0_15px_45px_rgba(15,23,42,0.12)]">
               {/* User Header */}
-              <div className="border-b border-border bg-gradient-to-r from-background to-surface px-4 py-4">
+              <div className="border-b border-border bg-linear-to-r from-background to-surface px-4 py-4">
                 <div className="flex items-center gap-3">
                   <div
                     className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl text-sm font-bold text-white"
@@ -154,7 +154,7 @@ const Header = () => {
                   type="button"
                   onClick={() => {
                     setShowMenu(false);
-                    navigate("/profile");
+                    
                   }}
                   className="group flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left transition hover:bg-background"
                 >

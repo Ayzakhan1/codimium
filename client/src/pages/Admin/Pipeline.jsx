@@ -193,7 +193,7 @@ export default function Pipeline() {
             return (
               <section
                 key={currentStatus}
-                className={`flex h-[500px] min-w-0 flex-col overflow-hidden rounded-xl border border-border border-t-4 bg-surface shadow-sm transition-shadow hover:shadow-md ${style.border}`}
+                className={`flex h-125 min-w-0 flex-col overflow-hidden rounded-xl border border-border border-t-4 bg-surface shadow-sm transition-shadow hover:shadow-md ${style.border}`}
               >
                 {/* COLUMN HEADER */}
                 <div className="shrink-0 border-b border-border bg-surface p-4">
@@ -267,11 +267,11 @@ export default function Pipeline() {
                           </div>
 
                           <div className="min-w-0 flex-1">
-                            <h4 className="break-words text-sm font-semibold text-ink">
+                            <h4 className="wrap-break-words text-sm font-semibold text-ink">
                               {lead.businessName || "Unnamed Business"}
                             </h4>
 
-                            <p className="mt-1 break-words text-xs text-ink-secondary">
+                            <p className="mt-1 wrap-break-words text-xs text-ink-secondary">
                               {lead.category || "No category"}
                             </p>
                           </div>
@@ -310,7 +310,7 @@ export default function Pipeline() {
 
                         {/* POTENTIAL SERVICE */}
                         <div className="mt-3">
-                          <span className="inline-block max-w-full break-words rounded-md bg-background px-2.5 py-1.5 text-xs font-medium text-ink-secondary">
+                          <span className="inline-block max-w-full wrap-break-words rounded-md bg-background px-2.5 py-1.5 text-xs font-medium text-ink-secondary">
                             {lead.potentialService || "No service selected"}
                           </span>
                         </div>
@@ -327,7 +327,7 @@ export default function Pipeline() {
                               Follow-up Date
                             </p>
 
-                            <p className="mt-0.5 break-words text-xs font-medium text-ink">
+                            <p className="mt-0.5 wrap-break-words text-xs font-medium text-ink">
                               {formatDate(lead.followUpDate)}
                             </p>
                           </div>

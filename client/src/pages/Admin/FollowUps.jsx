@@ -1,4 +1,4 @@
-
+import axios from "axios";
 import { useState } from "react";
 import { useSelector } from "react-redux";
 import {
@@ -48,16 +48,16 @@ const getDate = (value) => {
 const formatDate = (value) => {
   const dateValue = getDate(value);
 
-  if (!dateValue) return "Not scheduled";
+    if (!dateValue) return "Not scheduled";
 
-  const [year, month, day] = dateValue.split("-");
+       const [year, month, day] = dateValue.split("-");
 
-  return new Date(Number(year), Number(month) - 1, Number(day))
-    .toLocaleDateString("en-GB", {
-      day: "2-digit",
-      month: "short",
-      year: "numeric",
-    });
+        return new Date(Number(year), Number(month) - 1, Number(day))
+        .toLocaleDateString("en-GB", {
+           day: "2-digit",
+           month: "short",
+            year: "numeric",
+         });
 };
 
 // Check completed leads
@@ -79,12 +79,38 @@ export default function FollowUps() {
   const leads = useSelector((state) => state.leads.leads || []);
 
   const [search, setSearch] = useState("");
-  const [activeFilter, setActiveFilter] = useState("All");
+const [activeFilter, setActiveFilter] = useState("All");
+const [searchResults, setSearchResults] = useState(null);
 
   const today = getToday();
 
+  const searchLeads = async (e) => {
+  const value = e.target.value;
+
+  setSearch(value);
+
+  // Search empty ho to original Redux leads show hon
+  if (!value.trim()) {
+    setSearchResults(null);
+    return;
+  }
+
+  try {
+    const response = await axios.get(
+      `${import.meta.env.VITE_API_URL}/api/leads/search-leads/${encodeURIComponent(value.trim())}`
+    );
+
+    setSearchResults(response.data.data || []);
+  } catch (error) {
+    console.log("Search Error:", error.response?.data);
+    setSearchResults([]);
+  }
+};
+
   // Remove Won/Lost leads and sort by follow-up date
-  const followUpLeads = leads
+  const sourceLeads = searchResults === null ? leads : searchResults;
+
+const followUpLeads = sourceLeads
     .filter((lead) => !isClosed(lead))
     .map((lead) => ({
       ...lead,
@@ -114,31 +140,17 @@ export default function FollowUps() {
     (lead) => lead.followUpStatus === "unscheduled"
   );
 
-  // Search and filter
-  const filteredLeads = followUpLeads.filter((lead) => {
-    const searchText = search.toLowerCase().trim();
-
-    const matchesSearch = [
-      lead.businessName,
-      lead.contactPerson,
-      lead.phone,
-      lead.email,
-      lead.city,
-      lead.potentialService,
-    ].some((value) =>
-      String(value || "").toLowerCase().includes(searchText)
-    );
-
-    const matchesFilter =
-      activeFilter === "All" ||
-      (activeFilter === "Today" && lead.followUpStatus === "today") ||
-      (activeFilter === "Overdue" && lead.followUpStatus === "overdue") ||
-      (activeFilter === "Upcoming" && lead.followUpStatus === "upcoming") ||
-      (activeFilter === "Not Scheduled" &&
-        lead.followUpStatus === "unscheduled");
-
-    return matchesSearch && matchesFilter;
-  });
+  // filter
+ const filteredLeads = followUpLeads.filter((lead) => {
+  return (
+    activeFilter === "All" ||
+    (activeFilter === "Today" && lead.followUpStatus === "today") ||
+    (activeFilter === "Overdue" && lead.followUpStatus === "overdue") ||
+    (activeFilter === "Upcoming" && lead.followUpStatus === "upcoming") ||
+    (activeFilter === "Not Scheduled" &&
+      lead.followUpStatus === "unscheduled")
+  );
+});
 
   // Summary cards
   const summaryCards = [
@@ -450,7 +462,7 @@ export default function FollowUps() {
             <input
               type="text"
               value={search}
-              onChange={(e) => setSearch(e.target.value)}
+              onChange={searchLeads}
               placeholder="Search business, phone, contact..."
               className="w-full rounded-lg border border-border bg-background py-2.5 pl-10 pr-3 text-sm text-ink outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
