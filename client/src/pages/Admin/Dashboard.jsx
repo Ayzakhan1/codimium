@@ -77,7 +77,7 @@ const formatDate = (date) => {
   });
 };
 
-// daye check 
+// daye check
 
 const isToday = (date) => {
   if (!date) return false;
@@ -121,14 +121,9 @@ const getFollowUpText = (date) => {
 };
 
 const Dashboard = () => {
+  const leads = useSelector((state) => state.leads.leads);
 
-
-const leads = useSelector((state) => state.leads.leads);
-
- 
- console.log("Dashboard leads:", leads);
-
-
+  console.log("Dashboard leads:", leads);
 
   // -----------------------------
   // Simple Lead Counts
@@ -137,36 +132,28 @@ const leads = useSelector((state) => state.leads.leads);
   const totalLeads = leads.length;
 
   const newLeads = leads.filter(
-    (lead) => (lead.status || "New") === "New"
+    (lead) => (lead.status || "New") === "New",
   ).length;
 
   const contactedLeads = leads.filter(
-    (lead) => lead.status === "Contacted"
+    (lead) => lead.status === "Contacted",
   ).length;
 
   const interestedLeads = leads.filter(
-    (lead) => lead.status === "Interested"
+    (lead) => lead.status === "Interested",
   ).length;
 
-  const meetingLeads = leads.filter(
-    (lead) => lead.status === "Meeting"
-  ).length;
+  const meetingLeads = leads.filter((lead) => lead.status === "Meeting").length;
 
-  const wonLeads = leads.filter(
-    (lead) => lead.status === "Won"
-  ).length;
+  const wonLeads = leads.filter((lead) => lead.status === "Won").length;
 
-  const lostLeads = leads.filter(
-    (lead) => lead.status === "Lost"
-  ).length;
+  const lostLeads = leads.filter((lead) => lead.status === "Lost").length;
 
   // -----------------------------
   // Today's Follow-ups
   // -----------------------------
 
-  const todayFollowUps = leads.filter((lead) =>
-    isToday(lead.followUpDate)
-  );
+  const todayFollowUps = leads.filter((lead) => isToday(lead.followUpDate));
 
   // -----------------------------
   // Upcoming Follow-ups
@@ -178,11 +165,7 @@ const leads = useSelector((state) => state.leads.leads);
 
       return new Date(lead.followUpDate) > new Date();
     })
-    .sort(
-      (a, b) =>
-        new Date(a.followUpDate) -
-        new Date(b.followUpDate)
-    );
+    .sort((a, b) => new Date(a.followUpDate) - new Date(b.followUpDate));
 
   // -----------------------------
   // Recent Leads
@@ -190,10 +173,7 @@ const leads = useSelector((state) => state.leads.leads);
 
   const recentLeads = [...leads]
     .sort((a, b) => {
-      return (
-        new Date(b.createdAt || 0) -
-        new Date(a.createdAt || 0)
-      );
+      return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
     })
     .slice(0, 6);
 
@@ -243,17 +223,13 @@ const leads = useSelector((state) => state.leads.leads);
     Contacted: contactedLeads,
     Interested: interestedLeads,
     Meeting: meetingLeads,
-    "Proposal Sent": leads.filter(
-      (lead) => lead.status === "Proposal Sent"
-    ).length,
+    "Proposal Sent": leads.filter((lead) => lead.status === "Proposal Sent")
+      .length,
     Won: wonLeads,
     Lost: lostLeads,
   };
 
-  const biggestStatusCount = Math.max(
-    ...Object.values(statusCounts),
-    1
-  );
+  const biggestStatusCount = Math.max(...Object.values(statusCounts), 1);
 
   // Stat cards
   const statCards = [
@@ -303,16 +279,13 @@ const leads = useSelector((state) => state.leads.leads);
 
   return (
     <div className="space-y-6">
-
       {/* ================================
           PAGE HEADER
       ================================= */}
 
       <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
         <div>
-          <p className="text-sm font-medium text-primary-hover">
-            Overview
-          </p>
+          <p className="text-sm font-medium text-primary-hover">Overview</p>
 
           <h1 className="mt-1 text-2xl font-bold tracking-tight text-ink sm:text-3xl">
             Admin Dashboard
@@ -341,8 +314,6 @@ const leads = useSelector((state) => state.leads.leads);
           </Link>
         </div>
       </div>
-
-    
 
       {/* ================================
           STAT CARDS
@@ -384,15 +355,12 @@ const leads = useSelector((state) => state.leads.leads);
       ================================= */}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-
         {/* Pipeline */}
 
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm xl:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-ink">
-                Sales Pipeline
-              </h2>
+              <h2 className="text-lg font-bold text-ink">Sales Pipeline</h2>
 
               <p className="mt-1 text-sm text-ink-muted">
                 Current leads at each stage.
@@ -413,8 +381,7 @@ const leads = useSelector((state) => state.leads.leads);
               const count = statusCounts[status];
               const style = getStatusStyle(status);
 
-              const width =
-                (count / biggestStatusCount) * 100;
+              const width = (count / biggestStatusCount) * 100;
 
               return (
                 <div key={status}>
@@ -449,9 +416,7 @@ const leads = useSelector((state) => state.leads.leads);
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-ink">
-                Today's Follow-ups
-              </h2>
+              <h2 className="text-lg font-bold text-ink">Today's Follow-ups</h2>
 
               <p className="mt-1 text-sm text-ink-muted">
                 Leads that need attention today.
@@ -464,12 +429,9 @@ const leads = useSelector((state) => state.leads.leads);
           </div>
 
           <div className="mt-5 space-y-3">
-            { todayFollowUps.length === 0 ? (
+            {todayFollowUps.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border bg-background px-4 py-8 text-center">
-                <Clock3
-                  className="mx-auto text-ink-muted"
-                  size={24}
-                />
+                <Clock3 className="mx-auto text-ink-muted" size={24} />
 
                 <p className="mt-2 text-sm font-medium text-ink-secondary">
                   No follow-ups for today
@@ -522,15 +484,12 @@ const leads = useSelector((state) => state.leads.leads);
       ================================= */}
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
-
         {/* Recent Leads */}
 
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm xl:col-span-2">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="text-lg font-bold text-ink">
-                Recent Leads
-              </h2>
+              <h2 className="text-lg font-bold text-ink">Recent Leads</h2>
 
               <p className="mt-1 text-sm text-ink-muted">
                 Latest leads added to the CRM.
@@ -548,10 +507,7 @@ const leads = useSelector((state) => state.leads.leads);
           <div className="mt-5 overflow-x-auto">
             {recentLeads.length === 0 ? (
               <div className="rounded-xl border border-dashed border-border bg-background px-4 py-10 text-center">
-                <FileText
-                  className="mx-auto text-ink-muted"
-                  size={26}
-                />
+                <FileText className="mx-auto text-ink-muted" size={26} />
 
                 <p className="mt-2 text-sm font-medium text-ink-secondary">
                   No leads found
@@ -597,9 +553,7 @@ const leads = useSelector((state) => state.leads.leads);
 
                 <tbody>
                   {recentLeads.map((lead) => {
-                    const style = getStatusStyle(
-                      lead.status || "New"
-                    );
+                    const style = getStatusStyle(lead.status || "New");
 
                     return (
                       <tr
@@ -611,13 +565,11 @@ const leads = useSelector((state) => state.leads.leads);
                             to={`/admin/leads/${lead._id || lead.id}`}
                             className="font-semibold text-ink hover:text-primary-hover"
                           >
-                            {lead.businessName ||
-                              "Unnamed Business"}
+                            {lead.businessName || "Unnamed Business"}
                           </Link>
 
                           <p className="mt-0.5 text-xs text-ink-muted">
-                            {lead.contactPerson ||
-                              "No contact person"}
+                            {lead.contactPerson || "No contact person"}
                           </p>
                         </td>
 
@@ -638,9 +590,7 @@ const leads = useSelector((state) => state.leads.leads);
                         </td>
 
                         <td className="py-4 text-sm text-ink-muted">
-                          {getFollowUpText(
-                            lead.followUpDate
-                          )}
+                          {getFollowUpText(lead.followUpDate)}
                         </td>
                       </tr>
                     );
@@ -655,9 +605,7 @@ const leads = useSelector((state) => state.leads.leads);
 
         <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
           <div>
-            <h2 className="text-lg font-bold text-ink">
-              Lead Insights
-            </h2>
+            <h2 className="text-lg font-bold text-ink">Lead Insights</h2>
 
             <p className="mt-1 text-sm text-ink-muted">
               Where your leads are coming from.
@@ -672,9 +620,7 @@ const leads = useSelector((state) => state.leads.leads);
                 Top Categories
               </h3>
 
-              <span className="text-xs text-ink-muted">
-                Leads
-              </span>
+              <span className="text-xs text-ink-muted">Leads</span>
             </div>
 
             <div className="mt-3 space-y-3">
@@ -721,9 +667,7 @@ const leads = useSelector((state) => state.leads.leads);
                 Top Cities
               </h3>
 
-              <span className="text-xs text-ink-muted">
-                Leads
-              </span>
+              <span className="text-xs text-ink-muted">Leads</span>
             </div>
 
             <div className="mt-3 space-y-3">
@@ -771,9 +715,7 @@ const leads = useSelector((state) => state.leads.leads);
       <section className="rounded-2xl border border-border bg-surface p-5 shadow-sm">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-lg font-bold text-ink">
-              Upcoming Follow-ups
-            </h2>
+            <h2 className="text-lg font-bold text-ink">Upcoming Follow-ups</h2>
 
             <p className="mt-1 text-sm text-ink-muted">
               Keep track of the next conversations with potential clients.
@@ -790,12 +732,9 @@ const leads = useSelector((state) => state.leads.leads);
         </div>
 
         <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
-          { upcomingFollowUps.length === 0 ? (
+          {upcomingFollowUps.length === 0 ? (
             <div className="rounded-xl border border-dashed border-border bg-background px-4 py-7 text-center md:col-span-2 xl:col-span-3">
-              <Clock3
-                className="mx-auto text-ink-muted"
-                size={24}
-              />
+              <Clock3 className="mx-auto text-ink-muted" size={24} />
 
               <p className="mt-2 text-sm font-medium text-ink-secondary">
                 No upcoming follow-ups
@@ -811,13 +750,11 @@ const leads = useSelector((state) => state.leads.leads);
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-ink group-hover:text-primary-hover">
-                      {lead.businessName ||
-                        "Unnamed Business"}
+                      {lead.businessName || "Unnamed Business"}
                     </p>
 
                     <p className="mt-1 text-xs text-ink-muted">
-                      {lead.contactPerson ||
-                        "No contact person"}
+                      {lead.contactPerson || "No contact person"}
                     </p>
                   </div>
 
@@ -830,9 +767,7 @@ const leads = useSelector((state) => state.leads.leads);
                 <div className="mt-4 flex items-center gap-2 text-xs font-medium text-ink-muted">
                   <CalendarClock size={14} />
 
-                  {getFollowUpText(
-                    lead.followUpDate
-                  )}
+                  {getFollowUpText(lead.followUpDate)}
                 </div>
               </Link>
             ))

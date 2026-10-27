@@ -1,5 +1,7 @@
-const { addLeads, getLeads, deleteLead, updateLead, searchLeads } = require("./leadController/leads");
+const { addLeads, getLeads, deleteLead, updateLead, searchLeads } = require("./admin/leads");
+const { getTeamMembers} = require("./admin/teamMembersController")
 const { registerUser, login, createAdmin } = require("./auth/authController");
+const { getTeamMemberLeads, searchTeamMemberLeads, updateTeamMemberLead } = require("./team_member/leadsController");
 
 module.exports = {
     createAdmin,
@@ -9,5 +11,9 @@ module.exports = {
     getLeads,
     deleteLead,
     updateLead,
-    searchLeads
+    searchLeads,
+    getTeamMembers,
+    getTeamMemberLeads,
+    searchTeamMemberLeads,
+    updateTeamMemberLead
 };
